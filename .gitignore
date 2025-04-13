@@ -1,0 +1,18 @@
+# Ignorar archivos de entorno virtual
+# Ignorar archivos de entorno virtual de Python
+
+    
+ venv/
+ env/
+ .env
+ 
+ # Ignorar archivos de configuración local
+ *.pyc
+ __pycache__/
+ .vscode/
+ .idea/
+ 
+ # Ignorar archivos de base de datos o sensibles
+ *.db
+ *.sqlite3
+ *.env
