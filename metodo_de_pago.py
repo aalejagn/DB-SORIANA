@@ -14,7 +14,7 @@ def interfaz_metodo_pago():
 Creación de la sección de métodos de pago
 """
 def crear_seccion_metodo_pago(ventana, barra_lateral):
-    campos = ["Id metodo:", "Tipo:"]
+    campos = ["Id metodo:", "Tipo:", "Descripción:"]
 
     # Limpiamos los widgets existentes, excepto la barra lateral
     if barra_lateral:

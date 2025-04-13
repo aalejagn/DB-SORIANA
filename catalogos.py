@@ -56,9 +56,9 @@ Creamos la funcion de validar datos para usuarios
 """
 def validar_usuarios(tipo_usuario, contraseña, ventana, marco_sombra):
     if tipo_usuario in ["Gerente", "Trabajador"]:
-            marco_sombra.destroy()
-            barra_lateral(ventana, tipo_usuario)
-            messagebox.showerror("Error", "Ingrese contraseña válida")
+        marco_sombra.destroy()
+        barra_lateral(ventana, tipo_usuario)
+        messagebox.showerror("Error", "Ingrese contraseña válida")
     else:
         messagebox.showerror("Error", "Ingrese usuario válido")
 
@@ -69,7 +69,13 @@ def barra_lateral(ventana, tipo_usuario):
     barra_lateral = Frame(ventana, bg="#D3D3D3", width=200)
     barra_lateral.pack(side="left", fill="y")
 
-    opciones = ["Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago", "Empleado"]
+    # Opciones base disponibles para todos
+    opciones = ["Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago"]
+    
+    # Agregar "Empleado" solo si el usuario es Gerente
+    if tipo_usuario == "Gerente":
+        opciones.append("Empleado")
+
     funciones = {
         "Clientes": lambda: manejo_clientes(ventana, tipo_usuario, barra_lateral),
         "Proveedor": lambda: crear_seccion_proveedor(ventana, barra_lateral),
@@ -78,6 +84,7 @@ def barra_lateral(ventana, tipo_usuario):
         "Metodo de pago": lambda: crear_seccion_metodo_pago(ventana, barra_lateral),
         "Empleado": lambda: manejo_empleados(ventana, tipo_usuario, barra_lateral)
     }
+    
     for opcion in opciones:
         Button(barra_lateral, text=opcion, bg="#4682B4", fg="white", width=20,
                font=("Arial", 12), command=funciones.get(opcion, lambda: None)).pack(pady=5, padx=10)

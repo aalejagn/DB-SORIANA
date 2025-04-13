@@ -14,8 +14,7 @@ def interfaz_categorias():
 Creación de la sección de categorías
 """
 def crear_seccion_categorias(ventana, barra_lateral):
-    campos = ["Codigo:", "Nombre:"]
-
+    campos = ["Codigo:", "Nombre:", "Descripción:"]  # Agregado
     # Limpiamos los widgets existentes, excepto la barra lateral
     if barra_lateral:
         for widget in ventana.winfo_children():

@@ -14,7 +14,7 @@ def interfaz_unidades():
 Creación de la sección de unidades
 """
 def crear_seccion_unidades(ventana, barra_lateral):
-    campos = ["Id unidades:", "Nombre:"]
+    campos = ["Id unidades:", "Nombre:","Descripción:"]
 
     # Limpiamos los widgets existentes, excepto la barra lateral
     if barra_lateral:

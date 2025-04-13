@@ -14,7 +14,7 @@ def interfaz_proveedor():
 Creación de la sección de proveedores
 """
 def crear_seccion_proveedor(ventana, barra_lateral):
-    campos = ["Id Proveedor:", "Nombre:", "Teléfono:", "Contacto:"]
+    campos = ["Id Proveedor:", "Nombre:", "Teléfono:", "Empresa:", "Descripción:"]
 
     # Limpiamos los widgets existentes, excepto la barra lateral
     if barra_lateral:

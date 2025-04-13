@@ -6,7 +6,7 @@ Interfaz para la gestión de empleados
 def interfaz_empleado():
     ventana = Tk()
     ventana.title("Empleado")
-    ventana.geometry("800x600")
+    ventana.geometry("1000x600")  # Aumenté el ancho de la ventana
     crear_seccion_empleado(ventana, None).pack(expand=True, fill="both")
     ventana.mainloop()
 
@@ -14,7 +14,7 @@ def interfaz_empleado():
 Creación de la sección de empleados
 """
 def crear_seccion_empleado(ventana, barra_lateral):
-    campos = ["Nombre:", "Apellidos:", "Telefono:", "Edad:", "Puesto:", "Sueldo:", "Fecha_Contratacion:", "RFC:"]
+    campos = ["ID Empleado:", "Nombre:", "Apellidos:", "Telefono:", "Edad:", "Puesto:", "Sueldo:", "Fecha_Contratacion:", "RFC:"]
 
     # Limpiamos los widgets existentes, excepto la barra lateral
     if barra_lateral:
@@ -40,23 +40,38 @@ def crear_seccion_empleado(ventana, barra_lateral):
     # Título de la sección
     Label(frame_izquierdo, text="Trabajadores", font=("Arial", 16, "bold"), bg="#E6F0FA").pack(pady=10)
 
-    # Frame para los campos de entrada
+    # Frame para los campos de entrada, dividido en dos columnas
     frame_entradas = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_entradas.pack(fill="x", pady=5)
 
-    # Creamos las entradas
+    # Dividimos las entradas en dos subframes (izquierda y derecha)
+    frame_entradas_izq = Frame(frame_entradas, bg="#E6F0FA")
+    frame_entradas_izq.pack(side="left", padx=20)
+    frame_entradas_der = Frame(frame_entradas, bg="#E6F0FA")
+    frame_entradas_der.pack(side="left", padx=20)
+
     entradas = {}
-    for i, campo in enumerate(campos):
-        Label(frame_entradas, text=campo, bg="#E6F0FA", font=("Arial", 12)).grid(row=i, column=0, padx=(10, 2), pady=5, sticky="e")
-        entrada = Entry(frame_entradas, font=("Arial", 12))
-        entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
+    mitad = len(campos) // 2  # Dividimos los campos en dos grupos
+
+    # Entradas para la columna izquierda (primeros 5 campos)
+    for i, campo in enumerate(campos[:mitad]):
+        Label(frame_entradas_izq, text=campo, bg="#E6F0FA", font=("Arial", 12)).grid(row=i, column=0, padx=(10, 5), pady=8, sticky="e")
+        entrada = Entry(frame_entradas_izq, font=("Arial", 12), width=25)
+        entrada.grid(row=i, column=1, padx=(0, 10), pady=8, sticky="w")
         entradas[campo] = entrada
 
-    # Creación de tabla (más grande)
+    # Entradas para la columna derecha (últimos 5 campos)
+    for i, campo in enumerate(campos[mitad:]):
+        Label(frame_entradas_der, text=campo, bg="#E6F0FA", font=("Arial", 12)).grid(row=i, column=0, padx=(10, 5), pady=8, sticky="e")
+        entrada = Entry(frame_entradas_der, font=("Arial", 12), width=25)
+        entrada.grid(row=i, column=1, padx=(0, 10), pady=8, sticky="w")
+        entradas[campo] = entrada
+
+    # Creación de tabla (más ancha y ajustada)
     tabla = ttk.Treeview(frame_izquierdo, columns=campos, show="headings", height=15)
     for col in campos:
         tabla.heading(col, text=col)
-        tabla.column(col, width=150)
+        tabla.column(col, width=100)  # Reduje el ancho para que quepan todas
     tabla.pack(pady=10, fill="both", expand=True)
 
     # Botones (en el frame derecho, apilados verticalmente)

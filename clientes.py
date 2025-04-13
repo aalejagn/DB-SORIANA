@@ -14,7 +14,7 @@ def interfaz_clientes():
 Creación de la sección de clientes
 """
 def crear_seccion_clientes(ventana, barra_lateral):
-    campos = ["Telefono:", "Nombre:", "Dirección:", "RFC:", "Correo:"]
+    campos = ["Telefono:", "Nombre:", "Dirección:", "RFC:", "Correo:", "Monedero Eletrónico:"]
 
     # Limpiamos los widgets existentes, excepto la barra lateral
     if barra_lateral:
