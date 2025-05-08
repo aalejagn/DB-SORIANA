@@ -13,6 +13,4 @@
  .idea/
  
  # Ignorar archivos de base de datos o sensibles
- *.db
- *.sqlite3
  *.env

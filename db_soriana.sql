@@ -60,3 +60,5 @@ CREATE TABLE unidades (
     nombre VARCHAR(100) NOT NULL,
     descripcion TEXT
 );
+
+SELECT * FROM unidades;
