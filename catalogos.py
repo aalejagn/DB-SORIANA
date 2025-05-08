@@ -3,8 +3,8 @@ from clientes import crear_seccion_clientes
 from proveedor import crear_seccion_proveedor
 from unidades import crear_seccion_unidades
 from categorias import crear_seccion_categorias
-from metodo_de_pago import crear_seccion_metodo_pago
-from empleados import crear_seccion_empleado
+from metodo_de_pago import crear_seccion_metodo_de_pago
+from empleados import crear_seccion_empleados
 
 """
 Funcion de creacion de ventana
@@ -88,7 +88,7 @@ def barra_lateral(ventana, tipo_usuario):
         "Proveedor": lambda: crear_seccion_proveedor(ventana, barra_lateral),
         "Unidades": lambda: crear_seccion_unidades(ventana, barra_lateral),
         "Categorias": lambda: crear_seccion_categorias(ventana, barra_lateral),
-        "Metodo de pago": lambda: crear_seccion_metodo_pago(ventana, barra_lateral),
+        "Metodo de pago": lambda: crear_seccion_metodo_de_pago(ventana, barra_lateral),
         "Empleado": lambda: manejo_empleados(ventana, tipo_usuario, barra_lateral)
     }
     
@@ -149,13 +149,12 @@ def manejo_empleados(ventana, tipo_usuario, barra_lateral):
     Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Arial", 12), bg="#E6F0FA").pack()
 
     if tipo_usuario == "Gerente":
-        frame_empleados = crear_seccion_empleado(main_frame, barra_lateral)
+        frame_empleados = crear_seccion_empleados(main_frame, barra_lateral)
         frame_empleados.pack(pady=10, fill="both", expand=True)
     else:
         Label(main_frame, text="Acceso restringido: Solo Gerentes pueden gestionar empleados.",
               font=("Arial", 12), bg="#E6F0FA").pack(pady=10)
 
-if __name__ == "__main__":
-    ventana = creacion_ventana()
-    ventana_login(ventana)
-    ventana.mainloop()
+ventana = creacion_ventana()
+ventana_login(ventana)
+ventana.mainloop()

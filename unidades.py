@@ -1,8 +1,6 @@
 from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox
+from db_soriana import agregar_unidad, eliminar_unidad, actualizar_unidad, ver_unidad, buscar_unidad
 
-"""
-Interfaz para la gestión de unidades
-"""
 def interfaz_unidades():
     ventana = Tk()
     ventana.title("Unidades")
@@ -10,13 +8,9 @@ def interfaz_unidades():
     crear_seccion_unidades(ventana, None).pack(expand=True, fill="both")
     ventana.mainloop()
 
-"""
-Creación de la sección de unidades
-"""
 def crear_seccion_unidades(ventana, barra_lateral):
-    campos = ["Id unidades:", "Nombre:","Descripción:"]
+    campos = ["ID Unidad:", "Nombre:", "Descripción:"]
 
-    # Limpiamos los widgets existentes, excepto la barra lateral
     if barra_lateral:
         for widget in ventana.winfo_children():
             if widget != barra_lateral:
@@ -25,26 +19,26 @@ def crear_seccion_unidades(ventana, barra_lateral):
     frame_principal = Frame(ventana, bg="#E6F0FA")
     frame_principal.pack(expand=True, fill="both")
 
-    # Frame intermedio para dividir en dos: izquierda (entradas y tabla) y derecha (botones)
     frame_centrado = Frame(frame_principal, bg="#E6F0FA")
     frame_centrado.pack(expand=True, fill="both", padx=10, pady=10)
 
-    # Frame lateral derecho para botones
     frame_derecho = Frame(frame_centrado, bg="#E6F0FA", width=150)
     frame_derecho.pack(side="right", fill="y", padx=10)
 
-    # Frame izquierdo para entradas y tabla
     frame_izquierdo = Frame(frame_centrado, bg="#E6F0FA")
     frame_izquierdo.pack(side="left", expand=True, fill="both")
 
-    # Título de la sección
     Label(frame_izquierdo, text="Unidades", font=("Arial", 16, "bold"), bg="#E6F0FA").pack(pady=10)
 
-    # Frame para los campos de entrada
+    frame_search = Frame(frame_izquierdo, bg="#E6F0FA")
+    frame_search.pack(fill="x", pady=5)
+    Label(frame_search, text="Buscar por ID Unidad:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    entry_busqueda = Entry(frame_search, font=("Arial", 12), width=20)
+    entry_busqueda.pack(side="left", padx=(0, 10))
+
     frame_entradas = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_entradas.pack(fill="x", pady=5)
 
-    # Creamos las entradas
     entradas = {}
     for i, campo in enumerate(campos):
         Label(frame_entradas, text=campo, bg="#E6F0FA", font=("Arial", 12)).grid(row=i, column=0, padx=(10, 2), pady=5, sticky="e")
@@ -52,22 +46,109 @@ def crear_seccion_unidades(ventana, barra_lateral):
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-    # Creación de tabla (más grande)
     tabla = ttk.Treeview(frame_izquierdo, columns=campos, show="headings", height=15)
     for col in campos:
         tabla.heading(col, text=col)
         tabla.column(col, width=150)
     tabla.pack(pady=10, fill="both", expand=True)
 
-    # Botones (en el frame derecho, apilados verticalmente)
+    id_unidad_original_var = [None]
+
+    def on_select(event):
+        select_item = tabla.selection()
+        if select_item:
+            values = tabla.item(select_item)['values']
+            for i, campo in enumerate(campos):
+                entradas[campo].delete(0, 'end')
+                entradas[campo].insert(0, values[i])
+            id_unidad_original_var[0] = values[0]
+
+    tabla.bind('<<TreeviewSelect>>', on_select)
+
+    def buscar_y_mostrar():
+        id_unidad = entry_busqueda.get().strip()
+        if not id_unidad:
+            ver_unidad(tabla)
+            for entrada in entradas.values():
+                entrada.delete(0, 'end')
+            id_unidad_original_var[0] = None
+            return
+
+        resultado = buscar_unidad(id_unidad)
+        for row in tabla.get_children():
+            tabla.delete(row)
+        for entrada in entradas.values():
+            entrada.delete(0, 'end')
+        id_unidad_original_var[0] = None
+
+        if resultado:
+            tabla.insert("", "end", values=resultado)
+            for i, campo in enumerate(campos):
+                entradas[campo].insert(0, resultado[i])
+            id_unidad_original_var[0] = resultado[0]
+        else:
+            messagebox.showwarning("No encontrado", f"No se encontró una unidad con el ID {id_unidad}")
+
+    Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
+           command=buscar_y_mostrar).pack(side="left", pady=5, padx=5)
+
+    def agregar():
+        id_unidad = entradas["ID Unidad:"].get().strip()
+        nombre = entradas["Nombre:"].get().strip()
+        descripcion = entradas["Descripción:"].get().strip()
+
+        if not all([id_unidad, nombre, descripcion]):
+            messagebox.showerror("Error", "Todos los campos son obligatorios")
+            return
+
+        agregar_unidad(id_unidad, nombre, descripcion)
+        ver_unidad(tabla)
+        limpiar_campos()
+
+    def eliminar():
+        id_unidad = entradas["ID Unidad:"].get().strip()
+        if not id_unidad:
+            messagebox.showerror("Error", "El campo ID Unidad es obligatorio")
+            return
+        eliminar_unidad(id_unidad)
+        ver_unidad(tabla)
+        limpiar_campos()
+
+    def actualizar_datos():
+        id_unidad = entradas["ID Unidad:"].get().strip()
+        nombre = entradas["Nombre:"].get().strip()
+        descripcion = entradas["Descripción:"].get().strip()
+
+        if not all([id_unidad, nombre, descripcion]):
+            messagebox.showerror("Error", "Todos los campos son obligatorios")
+            return
+
+        if not id_unidad_original_var[0]:
+            messagebox.showerror("Error", "Seleccione una unidad para actualizar")
+            return
+
+        actualizar_unidad(id_unidad_original_var[0], id_unidad, nombre, descripcion)
+        ver_unidad(tabla)
+        limpiar_campos()
+
+    def limpiar_campos():
+        for entrada in entradas.values():
+            entrada.delete(0, 'end')
+        entry_busqueda.delete(0, 'end')
+        id_unidad_original_var[0] = None
+
     Button(frame_derecho, text="Agregar", font=("Arial", 10), bg="#4CAF50", fg="white", width=15,
-           command=lambda: messagebox.showwarning("Advertencia", "Función no implementada")).pack(pady=5)
+           command=agregar).pack(pady=5)
     Button(frame_derecho, text="Eliminar", font=("Arial", 10), bg="#F44336", fg="white", width=15,
-           command=lambda: messagebox.showwarning("Advertencia", "Función no implementada")).pack(pady=5)
+           command=eliminar).pack(pady=5)
     Button(frame_derecho, text="Actualizar", font=("Arial", 10), bg="#2196F3", fg="white", width=15,
-           command=lambda: messagebox.showwarning("Advertencia", "Función no implementada")).pack(pady=5)
-    Button(frame_derecho, text="Limpiar", font=("Arial", 10), bg="#FFC107", fg="black", width=15).pack(pady=5)
+           command=actualizar_datos).pack(pady=5)
+    Button(frame_derecho, text="Limpiar", font=("Arial", 10), bg="#FFC107", fg="black", width=15,
+           command=limpiar_campos).pack(pady=5)
+
+    ver_unidad(tabla)
 
     return frame_principal
 
-interfaz_unidades()
+if __name__ == "__main__":
+    interfaz_unidades()
