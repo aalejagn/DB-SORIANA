@@ -1,8 +1,6 @@
 from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox
+from db_soriana import agregar_catalogo, eliminar_catalogo, actualizar_catalogo, ver_catalogo, buscar_catalogo
 
-"""
-Interfaz para la gestión de categorías
-"""
 def interfaz_categorias():
     ventana = Tk()
     ventana.title("Categorías")
@@ -10,12 +8,9 @@ def interfaz_categorias():
     crear_seccion_categorias(ventana, None).pack(expand=True, fill="both")
     ventana.mainloop()
 
-"""
-Creación de la sección de categorías
-"""
 def crear_seccion_categorias(ventana, barra_lateral):
-    campos = ["Codigo:", "Nombre:", "Descripción:"]  # Agregado
-    # Limpiamos los widgets existentes, excepto la barra lateral
+    campos = ["Código:", "Nombre:", "Descripción:"]
+
     if barra_lateral:
         for widget in ventana.winfo_children():
             if widget != barra_lateral:
@@ -24,26 +19,26 @@ def crear_seccion_categorias(ventana, barra_lateral):
     frame_principal = Frame(ventana, bg="#E6F0FA")
     frame_principal.pack(expand=True, fill="both")
 
-    # Frame intermedio para dividir en dos: izquierda (entradas y tabla) y derecha (botones)
     frame_centrado = Frame(frame_principal, bg="#E6F0FA")
     frame_centrado.pack(expand=True, fill="both", padx=10, pady=10)
 
-    # Frame lateral derecho para botones
     frame_derecho = Frame(frame_centrado, bg="#E6F0FA", width=150)
     frame_derecho.pack(side="right", fill="y", padx=10)
 
-    # Frame izquierdo para entradas y tabla
     frame_izquierdo = Frame(frame_centrado, bg="#E6F0FA")
     frame_izquierdo.pack(side="left", expand=True, fill="both")
 
-    # Título de la sección
-    Label(frame_izquierdo, text="Categorias", font=("Arial", 16, "bold"), bg="#E6F0FA").pack(pady=10)
+    Label(frame_izquierdo, text="Categorías", font=("Arial", 16, "bold"), bg="#E6F0FA").pack(pady=10)
 
-    # Frame para los campos de entrada
+    frame_search = Frame(frame_izquierdo, bg="#E6F0FA")
+    frame_search.pack(fill="x", pady=5)
+    Label(frame_search, text="Buscar por Código:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    entry_busqueda = Entry(frame_search, font=("Arial", 12), width=20)
+    entry_busqueda.pack(side="left", padx=(0, 10))
+
     frame_entradas = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_entradas.pack(fill="x", pady=5)
 
-    # Creamos las entradas
     entradas = {}
     for i, campo in enumerate(campos):
         Label(frame_entradas, text=campo, bg="#E6F0FA", font=("Arial", 12)).grid(row=i, column=0, padx=(10, 2), pady=5, sticky="e")
@@ -51,21 +46,107 @@ def crear_seccion_categorias(ventana, barra_lateral):
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-    # Creación de tabla (más grande)
     tabla = ttk.Treeview(frame_izquierdo, columns=campos, show="headings", height=15)
     for col in campos:
         tabla.heading(col, text=col)
         tabla.column(col, width=150)
     tabla.pack(pady=10, fill="both", expand=True)
 
-    # Botones (en el frame derecho, apilados verticalmente)
+    codigo_original_var = [None]
+
+    def on_select(event):
+        select_item = tabla.selection()
+        if select_item:
+            values = tabla.item(select_item)['values']
+            for i, campo in enumerate(campos):
+                entradas[campo].delete(0, 'end')
+                entradas[campo].insert(0, values[i])
+            codigo_original_var[0] = values[0]
+
+    tabla.bind('<<TreeviewSelect>>', on_select)
+
+    def buscar_y_mostrar():
+        codigo = entry_busqueda.get().strip()
+        if not codigo:
+            ver_catalogo(tabla)
+            for entrada in entradas.values():
+                entrada.delete(0, 'end')
+            codigo_original_var[0] = None
+            return
+
+        resultado = buscar_catalogo(codigo)
+        for row in tabla.get_children():
+            tabla.delete(row)
+        for entrada in entradas.values():
+            entrada.delete(0, 'end')
+        codigo_original_var[0] = None
+
+        if resultado:
+            tabla.insert("", "end", values=resultado)
+            for i, campo in enumerate(campos):
+                entradas[campo].insert(0, resultado[i])
+            codigo_original_var[0] = resultado[0]
+        else:
+            messagebox.showwarning("No encontrado", f"No se encontró una categoría con el código {codigo}")
+
+    Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
+           command=buscar_y_mostrar).pack(side="left", pady=5, padx=5)
+
+    def agregar():
+        codigo = entradas["Código:"].get().strip()
+        nombre = entradas["Nombre:"].get().strip()
+        descripcion = entradas["Descripción:"].get().strip()
+
+        if not all([codigo, nombre, descripcion]):
+            messagebox.showerror("Error", "Todos los campos son obligatorios")
+            return
+
+        agregar_catalogo(codigo, nombre, descripcion)
+        ver_catalogo(tabla)
+        limpiar_campos()
+
+    def eliminar():
+        codigo = entradas["Código:"].get().strip()
+        if not codigo:
+            messagebox.showerror("Error", "El campo Código es obligatorio")
+            return
+        eliminar_catalogo(codigo)
+        ver_catalogo(tabla)
+        limpiar_campos()
+
+    def actualizar_datos():
+        codigo = entradas["Código:"].get().strip()
+        nombre = entradas["Nombre:"].get().strip()
+        descripcion = entradas["Descripción:"].get().strip()
+
+        if not all([codigo, nombre, descripcion]):
+            messagebox.showerror("Error", "Todos los campos son obligatorios")
+            return
+
+        if not codigo_original_var[0]:
+            messagebox.showerror("Error", "Seleccione una categoría para actualizar")
+            return
+
+        actualizar_catalogo(codigo_original_var[0], codigo, nombre, descripcion)
+        ver_catalogo(tabla)
+        limpiar_campos()
+
+    def limpiar_campos():
+        for entrada in entradas.values():
+            entrada.delete(0, 'end')
+        entry_busqueda.delete(0, 'end')
+        codigo_original_var[0] = None
+
     Button(frame_derecho, text="Agregar", font=("Arial", 10), bg="#4CAF50", fg="white", width=15,
-           command=lambda: messagebox.showwarning("Advertencia", "Función no implementada")).pack(pady=5)
+           command=agregar).pack(pady=5)
     Button(frame_derecho, text="Eliminar", font=("Arial", 10), bg="#F44336", fg="white", width=15,
-           command=lambda: messagebox.showwarning("Advertencia", "Función no implementada")).pack(pady=5)
+           command=eliminar).pack(pady=5)
     Button(frame_derecho, text="Actualizar", font=("Arial", 10), bg="#2196F3", fg="white", width=15,
-           command=lambda: messagebox.showwarning("Advertencia", "Función no implementada")).pack(pady=5)
-    Button(frame_derecho, text="Limpiar", font=("Arial", 10), bg="#FFC107", fg="black", width=15).pack(pady=5)
+           command=actualizar_datos).pack(pady=5)
+    Button(frame_derecho, text="Limpiar", font=("Arial", 10), bg="#FFC107", fg="black", width=15,
+           command=limpiar_campos).pack(pady=5)
+
+    ver_catalogo(tabla)
 
     return frame_principal
 

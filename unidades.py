@@ -70,5 +70,4 @@ def crear_seccion_unidades(ventana, barra_lateral):
 
     return frame_principal
 
-if __name__ == "__main__":
-    interfaz_unidades()
+interfaz_unidades()

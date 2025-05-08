@@ -1,8 +1,6 @@
 from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox
+from db_soriana import agregar_cliente, eliminar_cliente, actualizar_cliente, ver_clientes, buscar_cliente
 
-"""
-Interfaz para la gestión de clientes
-"""
 def interfaz_clientes():
     ventana = Tk()
     ventana.title("Clientes")
@@ -10,11 +8,9 @@ def interfaz_clientes():
     crear_seccion_clientes(ventana, None).pack(expand=True, fill="both")
     ventana.mainloop()
 
-"""
-Creación de la sección de clientes
-"""
 def crear_seccion_clientes(ventana, barra_lateral):
-    campos = ["Telefono:", "Nombre:", "Dirección:", "RFC:", "Correo:", "Monedero Eletrónico:"]
+    # Campos alineados con la base de datos
+    campos = ["Nombre:", "Apellidos:", "Teléfono:", "Monedero:", "Dirección:", "RFC:", "Correo:"]
 
     # Limpiamos los widgets existentes, excepto la barra lateral
     if barra_lateral:
@@ -40,6 +36,13 @@ def crear_seccion_clientes(ventana, barra_lateral):
     # Título de la sección
     Label(frame_izquierdo, text="Clientes", font=("Arial", 16, "bold"), bg="#E6F0FA").pack(pady=10)
 
+    # Frame para búsqueda
+    frame_search = Frame(frame_izquierdo, bg="#E6F0FA")
+    frame_search.pack(fill="x", pady=5)
+    Label(frame_search, text="Buscar por Teléfono:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    entry_busqueda = Entry(frame_search, font=("Arial", 12), width=20)
+    entry_busqueda.pack(side="left", padx=(0, 10))
+
     # Frame para los campos de entrada
     frame_entradas = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_entradas.pack(fill="x", pady=5)
@@ -52,21 +55,127 @@ def crear_seccion_clientes(ventana, barra_lateral):
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-    # Creación de tabla (más grande)
-    tabla = ttk.Treeview(frame_izquierdo, columns=campos, show="headings", height=15)  # Aumentamos altura
+    # Creación de tabla
+    tabla = ttk.Treeview(frame_izquierdo, columns=campos, show="headings", height=15)
     for col in campos:
         tabla.heading(col, text=col)
-        tabla.column(col, width=150)  # Aumentamos el ancho de las columnas
+        tabla.column(col, width=100)  # Ajustado para 7 columnas
     tabla.pack(pady=10, fill="both", expand=True)
 
-    # Botones (en el frame derecho, apilados verticalmente)
+    # Variable para almacenar el teléfono original
+    telefono_original_var = [None]  # Usamos una lista para que sea mutable
+
+    # Función para cargar datos de la fila seleccionada
+    def on_select(event):
+        select_item = tabla.selection()
+        if select_item:
+            values = tabla.item(select_item)['values']
+            for i, campo in enumerate(campos):
+                entradas[campo].delete(0, 'end')
+                entradas[campo].insert(0, values[i])
+            telefono_original_var[0] = values[2]  # Guardar el teléfono original (índice 2 es Teléfono:)
+
+    tabla.bind('<<TreeviewSelect>>', on_select)
+
+    # Función para buscar y mostrar resultados
+    def buscar_y_mostrar():
+        telefono = entry_busqueda.get().strip()
+        if not telefono:
+            # Si el campo está vacío, mostramos todos los clientes
+            ver_clientes(tabla)
+            for entrada in entradas.values():
+                entrada.delete(0, 'end')  # Limpiar campos
+            telefono_original_var[0] = None
+            return
+
+        resultado = buscar_cliente(telefono)
+        # Limpiar la tabla
+        for row in tabla.get_children():
+            tabla.delete(row)
+        # Limpiar los campos de entrada
+        for entrada in entradas.values():
+            entrada.delete(0, 'end')
+        telefono_original_var[0] = None
+
+        if resultado:
+            # Insertar el resultado en la tabla
+            tabla.insert("", "end", values=resultado)
+            # Llenar los campos de entrada con los datos encontrados
+            for i, campo in enumerate(campos):
+                entradas[campo].insert(0, resultado[i])
+            telefono_original_var[0] = resultado[2]  # Guardar teléfono original
+        else:
+            messagebox.showwarning("No encontrado", f"No se encontró un cliente con el teléfono {telefono}")
+
+    # Botón de búsqueda
+    Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
+           command=buscar_y_mostrar).pack(side="left", pady=5, padx=5)
+
+    def agregar():
+        nombre = entradas["Nombre:"].get().strip()
+        apellidos = entradas["Apellidos:"].get().strip()
+        telefono = entradas["Teléfono:"].get().strip()
+        monedero = entradas["Monedero:"].get().strip()
+        direccion = entradas["Dirección:"].get().strip()
+        rfc = entradas["RFC:"].get().strip()
+        correo = entradas["Correo:"].get().strip()
+
+        if not all([nombre, apellidos, telefono, direccion, rfc, correo]):
+            messagebox.showerror("Error", "Todos los campos excepto Monedero son obligatorios")
+            return
+
+        agregar_cliente(nombre, apellidos, telefono, monedero, direccion, rfc, correo)
+        ver_clientes(tabla)
+        limpiar_campos()
+
+    def eliminar():
+        telefono = entradas["Teléfono:"].get().strip()
+        if not telefono:
+            messagebox.showerror("Error", "El campo Teléfono es obligatorio")
+            return
+        eliminar_cliente(telefono)
+        ver_clientes(tabla)
+        limpiar_campos()
+
+    def limpiar_campos():
+        for entrada in entradas.values():
+            entrada.delete(0, 'end')
+        entry_busqueda.delete(0, 'end')  # Limpiar campo de búsqueda
+        telefono_original_var[0] = None  # Resetear el teléfono original
+
+    def actualizar_datos():
+        nombre = entradas["Nombre:"].get().strip()
+        apellidos = entradas["Apellidos:"].get().strip()
+        telefono = entradas["Teléfono:"].get().strip()
+        monedero = entradas["Monedero:"].get().strip()
+        direccion = entradas["Dirección:"].get().strip()
+        rfc = entradas["RFC:"].get().strip()
+        correo = entradas["Correo:"].get().strip()
+
+        if not all([nombre, apellidos, telefono, direccion, rfc, correo]):
+            messagebox.showerror("Error", "Todos los campos excepto Monedero son obligatorios")
+            return
+
+        if not telefono_original_var[0]:
+            messagebox.showerror("Error", "Seleccione un cliente para actualizar")
+            return
+
+        actualizar_cliente(telefono_original_var[0], nombre, apellidos, telefono, monedero, direccion, rfc, correo)
+        ver_clientes(tabla)
+        limpiar_campos()
+
+    # Botones
     Button(frame_derecho, text="Agregar", font=("Arial", 10), bg="#4CAF50", fg="white", width=15,
-           command=lambda: messagebox.showwarning("Advertencia", "Función no implementada")).pack(pady=5)
+           command=agregar).pack(pady=5)
     Button(frame_derecho, text="Eliminar", font=("Arial", 10), bg="#F44336", fg="white", width=15,
-           command=lambda: messagebox.showwarning("Advertencia", "Función no implementada")).pack(pady=5)
+           command=eliminar).pack(pady=5)
     Button(frame_derecho, text="Actualizar", font=("Arial", 10), bg="#2196F3", fg="white", width=15,
-           command=lambda: messagebox.showwarning("Advertencia", "Función no implementada")).pack(pady=5)
-    Button(frame_derecho, text="Limpiar", font=("Arial", 10), bg="#FFC107", fg="black", width=15).pack(pady=5)
+           command=actualizar_datos).pack(pady=5)
+    Button(frame_derecho, text="Limpiar", font=("Arial", 10), bg="#FFC107", fg="black", width=15,
+           command=limpiar_campos).pack(pady=5)
+
+    # Cargar todos los clientes al iniciar
+    ver_clientes(tabla)
 
     return frame_principal
 

@@ -69,6 +69,13 @@ def barra_lateral(ventana, tipo_usuario):
     barra_lateral = Frame(ventana, bg="#D3D3D3", width=200)
     barra_lateral.pack(side="left", fill="y")
 
+    """Frame para el rol y el boton de salir"""
+    frame_superior= Frame(barra_lateral, bg = "#D3D3D3")
+    frame_superior.pack(fill="x", pady=10, padx=10)
+    
+    # Rol
+    Label(frame_superior, text=f"{tipo_usuario}", font=("Arial", 14, "bold"), bg = "#DEDEDE").pack
+
     # Opciones base disponibles para todos
     opciones = ["Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago"]
     
