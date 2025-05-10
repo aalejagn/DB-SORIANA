@@ -1,7 +1,6 @@
 # Ignorar archivos de entorno virtual
 # Ignorar archivos de entorno virtual de Python
-
-    
+ env23270631
  venv/
  env/
  .env

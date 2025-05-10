@@ -61,4 +61,4 @@ CREATE TABLE unidades (
     descripcion TEXT
 );
 
-SELECT * FROM unidades;
+SELECT * FROM unidades

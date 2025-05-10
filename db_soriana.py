@@ -7,7 +7,7 @@ def obtener_conexion():
         return mysql.connector.connect(
             host="localhost",  # Host local
             user="root",
-            password="Duoesme12@",
+            password="23270631@",
             database="db_soriana"
         )
     except mysql.connector.Error as e:
