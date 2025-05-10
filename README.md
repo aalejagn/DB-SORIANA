@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> f73dd3557efb3c399bfaeddc2867c84fa226e6f7
 # DBSoriana
 
 Este es un proyecto de aplicación de escritorio desarrollada en Python con Tkinter para gestionar una base de datos MySQL llamada `db_soriana`.  
