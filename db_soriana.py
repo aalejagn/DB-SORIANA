@@ -684,3 +684,4 @@ def buscar_unidad(id_unidad):
     finally:
         cursor.close()
         conexion.close()
+

@@ -1,53 +1,59 @@
 from tkinter import messagebox
-from abc import ABC, abstractmethod
 
 # Clase base para Configuración de usuarios
 class Configuracion:
-    usuarios = {"gerente": "1234"}  # usuarios por defecto
+    usuarios = {"gerente": "1234", "trabajador": "4321"}  # Usuarios por defecto
 
     def __init__(self, usuario_actual):
-        self.usuario_actual = usuario_actual
+        self.usuario_actual = usuario_actual.lower()
 
     def verificar_credenciales(self, usuario, contraseña):
-        return self.usuarios.get(usuario) == contraseña
+        return usuario.lower() in self.usuarios and self.usuarios[usuario.lower()] == contraseña
 
     def modificar_contraseña(self, usuario, nueva_contraseña):
         if self.usuario_actual != "gerente":
-            return messagebox.showerror("Error", "Solo el gerente puede cambiar contraseñas.")
+            messagebox.showerror("Error", "Solo el gerente puede cambiar contraseñas.")
+            return False
         
-        if usuario in self.usuarios:
-            self.usuarios[usuario] = nueva_contraseña
-            return messagebox.showinfo("Éxito", f"Contraseña actualizada para {usuario}")
+        if usuario.lower() in self.usuarios:
+            self.usuarios[usuario.lower()] = nueva_contraseña
+            messagebox.showinfo("Éxito", f"Contraseña actualizada para {usuario}")
+            return True
         else:
-            return messagebox.showwarning("Advertencia", "Usuario no encontrado.")
+            messagebox.showwarning("Advertencia", "Usuario no encontrado.")
+            return False
 
     def agregar_usuario(self, usuario, contraseña):
         if self.usuario_actual != "gerente":
-            return messagebox.showerror("Error", "Solo el gerente puede agregar usuarios.")
+            messagebox.showerror("Error", "Solo el gerente puede agregar usuarios.")
+            return False
         
-        if usuario in self.usuarios:
-            return messagebox.showwarning("Advertencia", "Usuario ya existe.")
+        if usuario.lower() in self.usuarios:
+            messagebox.showwarning("Advertencia", "Usuario ya existe.")
+            return False
         
-        self.usuarios[usuario] = contraseña
-        return messagebox.showinfo("Éxito", f"Usuario {usuario} agregado.")
+        self.usuarios[usuario.lower()] = contraseña
+        messagebox.showinfo("Éxito", f"Usuario {usuario} agregado.")
+        return True
 
     def eliminar_usuario(self, usuario):
         if self.usuario_actual != "gerente":
-            return messagebox.showerror("Error", "Solo el gerente puede eliminar usuarios.")
+            messagebox.showerror("Error", "Solo el gerente puede eliminar usuarios.")
+            return False
         
-        if usuario in self.usuarios:
-            del self.usuarios[usuario]
-            return messagebox.showinfo("Éxito", f"Usuario {usuario} eliminado.")
+        if usuario.lower() == "gerente":
+            messagebox.showerror("Error", "No se puede eliminar al usuario gerente.")
+            return False
+        
+        if usuario.lower() in self.usuarios:
+            del self.usuarios[usuario.lower()]
+            messagebox.showinfo("Éxito", f"Usuario {usuario} eliminado.")
+            return True
         else:
-            return messagebox.showwarning("Advertencia", "Usuario no encontrado.")
+            messagebox.showwarning("Advertencia", "Usuario no encontrado.")
+            return False
 
-# Clase abstracta para Ticket
-class Ticket(ABC):
-    @abstractmethod
-    def crear_ticket(self, ticket, titulo, empresa, cantidad, iva):
-        pass
-
-# Clase para exportar base de datos (a implementar)
+# Clase para exportar base de datos
 class BaseDeDatosCSV(Configuracion):
     def __init__(self, usuario_actual):
         super().__init__(usuario_actual)

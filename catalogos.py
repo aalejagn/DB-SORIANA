@@ -5,6 +5,7 @@ from unidades import crear_seccion_unidades
 from categorias import crear_seccion_categorias
 from metodo_de_pago import crear_seccion_metodo_de_pago
 from empleados import crear_seccion_empleados
+from configuracion_interfaz import crear_seccion_configuracion, crear_seccion_exportar_base_datos
 
 """
 Funcion de creacion de ventana
@@ -55,12 +56,13 @@ def ventana_login(ventana):
 Creamos la funcion de validar datos para usuarios
 """
 def validar_usuarios(tipo_usuario, contraseña, ventana, marco_sombra):
-    if tipo_usuario in ["Gerente", "Trabajador"]:
+    from configuracion import Configuracion
+    config = Configuracion(tipo_usuario.lower())
+    if config.verificar_credenciales(tipo_usuario.lower(), contraseña):
         marco_sombra.destroy()
         barra_lateral(ventana, tipo_usuario)
-        messagebox.showerror("Error", "Ingrese contraseña válida")
     else:
-        messagebox.showerror("Error", "Ingrese usuario válido")
+        messagebox.showerror("Error", "Usuario o contraseña incorrectos")
 
 """
 Creacion de lado lateral para los botones
@@ -74,14 +76,14 @@ def barra_lateral(ventana, tipo_usuario):
     frame_superior.pack(fill="x", pady=10, padx=10)
     
     # Rol
-    Label(frame_superior, text=f"{tipo_usuario}", font=("Arial", 14, "bold"), bg = "#DEDEDE").pack
+    Label(frame_superior, text=f"{tipo_usuario}", font=("Arial", 14, "bold"), bg = "#DEDEDE").pack()
 
     # Opciones base disponibles para todos
     opciones = ["Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago"]
     
-    # Agregar "Empleado" solo si el usuario es Gerente
+    # Agregar "Empleado" y "Configuración" solo si el usuario es Gerente
     if tipo_usuario == "Gerente":
-        opciones.append("Empleado")
+        opciones.extend(["Empleado", "Configuración"])
 
     funciones = {
         "Clientes": lambda: manejo_clientes(ventana, tipo_usuario, barra_lateral),
@@ -89,7 +91,8 @@ def barra_lateral(ventana, tipo_usuario):
         "Unidades": lambda: crear_seccion_unidades(ventana, barra_lateral),
         "Categorias": lambda: crear_seccion_categorias(ventana, barra_lateral),
         "Metodo de pago": lambda: crear_seccion_metodo_de_pago(ventana, barra_lateral),
-        "Empleado": lambda: manejo_empleados(ventana, tipo_usuario, barra_lateral)
+        "Empleado": lambda: manejo_empleados(ventana, tipo_usuario, barra_lateral),
+        "Configuración": lambda: manejo_configuracion(ventana, tipo_usuario, barra_lateral)
     }
     
     for opcion in opciones:
@@ -153,6 +156,53 @@ def manejo_empleados(ventana, tipo_usuario, barra_lateral):
         frame_empleados.pack(pady=10, fill="both", expand=True)
     else:
         Label(main_frame, text="Acceso restringido: Solo Gerentes pueden gestionar empleados.",
+              font=("Arial", 12), bg="#E6F0FA").pack(pady=10)
+
+"""
+Manejo de la sección de configuración (solo para Gerente)
+"""
+def manejo_configuracion(ventana, tipo_usuario, barra_lateral):
+    for widget in ventana.winfo_children():
+        if widget != barra_lateral:
+            widget.destroy()
+
+    main_frame = Frame(ventana, bg="#E6F0FA")
+    main_frame.pack(expand=True, fill="both")
+
+    # Título principal
+    Label(main_frame, text="PUNTO DE VENTA", font=("Arial", 20, "bold"), bg="#E6F0FA").pack(pady=10)
+    Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Arial", 12), bg="#E6F0FA").pack()
+
+    if tipo_usuario == "Gerente":
+        # Frame para el título y el submenú
+        frame_titulo_submenu = Frame(main_frame, bg="#E6F0FA")
+        frame_titulo_submenu.pack(fill="x", pady=10)
+
+        # Título "Configuración"
+        Label(frame_titulo_submenu, text="Configuración", font=("Arial", 16, "bold"), bg="#E6F0FA").pack()
+
+        # Frame para los botones del submenú (alineados horizontalmente)
+        frame_submenu = Frame(frame_titulo_submenu, bg="#E6F0FA")
+        frame_submenu.pack(pady=10)
+
+        # Frame donde se cargarán las interfaces
+        frame_contenido = Frame(main_frame, bg="#E6F0FA")
+        frame_contenido.pack(expand=True, fill="both", padx=10, pady=10)
+
+        # Función para limpiar el frame_contenido y cargar una nueva interfaz
+        def cargar_interfaz(interfaz_func):
+            for widget in frame_contenido.winfo_children():
+                widget.destroy()
+            interfaz_func(frame_contenido, barra_lateral)
+
+        # Botones alineados horizontalmente
+        Button(frame_submenu, text="Configuración Usuarios", font=("Arial", 12), bg="#2196F3", fg="white", width=20,
+               command=lambda: cargar_interfaz(crear_seccion_configuracion)).pack(side="left", padx=5)
+        Button(frame_submenu, text="Exportar Base de Datos", font=("Arial", 12), bg="#2196F3", fg="white", width=20,
+               command=lambda: cargar_interfaz(crear_seccion_exportar_base_datos)).pack(side="left", padx=5)
+
+    else:
+        Label(main_frame, text="Acceso restringido: Solo Gerentes pueden acceder a la configuración.",
               font=("Arial", 12), bg="#E6F0FA").pack(pady=10)
 
 ventana = creacion_ventana()
