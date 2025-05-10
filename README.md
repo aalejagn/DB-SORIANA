@@ -49,8 +49,7 @@ python nombrearchivo.py
 O bien:  
 ```bash
 py nombrearchivo.py
-=======
-
+```
 
 ---
 ### Requisitos
