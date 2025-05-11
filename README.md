@@ -68,7 +68,7 @@ Asegúrate de que el archivo `db_soriana.py` contenga las credenciales correctas
    MYSQL_CONFIG = {
        'host': 'localhost',
        'user': 'root',
-       'password': 'tu_contraseña',
+       'password': '23270631@',
        'database': 'db_soriana'
    }
    ```
@@ -84,9 +84,6 @@ Alternativamente:
 ```bash
 py catalogos.py
 ```
-
-**Nota**: Si el archivo principal tiene un nombre diferente (por ejemplo, `app.py`), usa ese nombre en lugar de `main.py`.
-
 
 ## Estructura del Proyecto
 
