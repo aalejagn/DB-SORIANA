@@ -1,44 +1,5 @@
 from tkinter import Label, Frame, Button, ttk, messagebox, Entry
 from configuracion import Configuracion
-from exportar_db import listar_tablas, exportar_tabla_a_csv
-
-def crear_seccion_exportar_base_datos(ventana, barra_lateral, ventana_principal):
-    frame_principal = Frame(ventana, bg="#E6F0FA")
-    frame_principal.pack(expand=True, fill="both")
-
-    frame_centrado = Frame(frame_principal, bg="#E6F0FA")
-    frame_centrado.pack(expand=True, fill="both", padx=10, pady=10)
-
-    frame_derecho = Frame(frame_centrado, bg="#E6F0FA", width=150)
-    frame_derecho.pack(side="right", fill="y", padx=10)
-
-    frame_izquierdo = Frame(frame_centrado, bg="#E6F0FA")
-    frame_izquierdo.pack(side="left", expand=True, fill="both")
-
-    Label(frame_izquierdo, text="Exportar Base de Datos", font=("Arial", 16, "bold"), bg="#E6F0FA").pack(pady=10)
-
-    frame_selector = Frame(frame_izquierdo, bg="#E6F0FA")
-    frame_selector.pack(fill="x", pady=5)
-
-    Label(frame_selector, text="Seleccionar tabla:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
-    
-    tablas = listar_tablas()
-    combo_tablas = ttk.Combobox(frame_selector, values=tablas, font=("Arial", 12), state="readonly")
-    combo_tablas.pack(side="left", padx=(0, 10))
-    if tablas:
-        combo_tablas.set(tablas[0])
-
-    def exportar_seleccionada():
-        tabla_seleccionada = combo_tablas.get()
-        if not tabla_seleccionada:
-            messagebox.showerror("Error", "Por favor, seleccione una tabla")
-            return
-        exportar_tabla_a_csv(tabla_seleccionada)
-
-    Button(frame_derecho, text="Exportar a CSV", font=("Arial", 10), bg="#4CAF50", fg="white", width=15,
-           command=exportar_seleccionada).pack(pady=5)
-
-    return frame_principal
 
 def crear_seccion_configuracion(ventana, barra_lateral, ventana_principal):
     frame_principal = Frame(ventana, bg="#E6F0FA")

@@ -1,84 +1,104 @@
 # DBSoriana
 
-Este es un proyecto de aplicación de escritorio desarrollada en Python con Tkinter para gestionar una base de datos MySQL llamada `db_soriana`.  
-La aplicación permite administrar empleados, categorías, proveedores, métodos de pago y unidades dentro de un sistema de gestión.
+Este es un proyecto de aplicación de escritorio desarrollada en Python con Tkinter para gestionar una base de datos MySQL llamada db_soriana. La aplicación proporciona un sistema CRUD (Crear, Leer, Actualizar, Eliminar) para administrar empleados, categorías, proveedores, métodos de pago, unidades, clientes y cuentas de usuario con acceso basado en roles (Gerente y Trabajador).
 
-### Pasos para configurar y ejecutar el proyecto
 
-**Paso 1:** Ejecutar el script de la base de datos  
-Ubicación sugerida del archivo SQL:  
-`C:\Users\aleja\Desktop\4SEMESTRE\TOPICOS AVANZADOS\SegundaUnidad\DB SORIANA\db_soriana.sql`
+## Características
 
-**Paso 2:** Crear el entorno virtual  
+- **Gestión de Usuarios**: Permite agregar, actualizar y eliminar usuarios (excepto el usuario "gerente") con control de acceso basado en roles.
+- **Manejo de Sesiones**: Funcionalidad de inicio y cierre de sesión con actualización dinámica de la lista de usuarios.
+- **Gestión de Entidades**: Administra clientes, empleados, categorías, proveedores, métodos de pago y unidades mediante operaciones CRUD.
+- **Acceso Basado en Roles**: Los usuarios Gerente tienen acceso a la gestión de empleados y configuración de usuarios; los usuarios Trabajador tienen acceso limitado.
+- **Interfaz Responsiva**: Construida con Tkinter para una experiencia de usuario amigable.
+
+## Requisitos
+
+- Python 3.8 o superior
+- Servidor MySQL (en ejecución y accesible)
+- pip (administrador de paquetes de Python)
+
+## Pasos para Configurar y Ejecutar el Proyecto
+
+### Paso 1: Crear el Entorno Virtual
+Crea un entorno virtual para aislar las dependencias del proyecto.
+
 ```bash
 python -m venv env23270631
 ```
 
-**Paso 3:** Activar el entorno virtual  
+### Paso 2: Activar el Entorno Virtual
+Activa el entorno virtual para instalar y ejecutar las dependencias.
+
 ```bash
-.\env23270631\Scripts\ctivate
+.\env23270631\Scripts\activate
 ```
 
-**Paso 4:** Verifica los paquetes instalados  
+### Paso 3: Verificar Paquetes Instalados
+Verifica los paquetes instalados en el entorno virtual.
+
 ```bash
 pip list
 ```
 
-**Paso 5:** Instalar el conector de MySQL  
+### Paso 4: Instalar Dependencias Requeridas
+Instala los paquetes necesarios para el proyecto.
+
 ```bash
-pip install mysql-connector
+pip install mysql-connector-python tk
 ```
 
-**Paso 6:** Instalar Tkinter (si es necesario)  
+- `mysql-connector-python`: Para la conectividad con la base de datos MySQL.
+- `tk`
+
+### Paso 5: Configurar la Base de Datos
+1. **Ejecutar el Script SQL**:
+   - Usa el script `db_soriana.sql` incluido en el proyecto para crear la base de datos y las tablas.
+   - Ejecuta:
+     ```bash
+     mysql -u root -p < db_soriana.sql
+     ```
+   - Ingresa la contraseña de `root` cuando se solicite. 
+
+
+### Paso 6: Actualizar la Configuración de la Base de Datos
+Asegúrate de que el archivo `db_soriana.py` contenga las credenciales correctas de MySQL.
+
+2. Verifica o actualiza la configuración:
+   ```python
+   MYSQL_CONFIG = {
+       'host': 'localhost',
+       'user': 'root',
+       'password': 'tu_contraseña',
+       'database': 'db_soriana'
+   }
+   ```
+
+### Paso 7: Ejecutar la Aplicación
+Ejecuta el archivo principal de la aplicación.
+
 ```bash
-pip install tk
+python catalogos.py
 ```
 
-**Paso 7:** Crear o tener un archivo `.gitignore`  
-Asegúrate de incluir el entorno virtual en el `.gitignore`.
-
-**Paso 8:** Agregar `env23270631` al archivo `.gitignore` para excluirlo del repositorio.
-
-
-**Paso 9:** Navegar a la carpeta del módulo deseado
-
-**Paso 10:** Ejecutar el archivo con:  
+Alternativamente:
 ```bash
-python nombrearchivo.py
-```
-O bien:  
-```bash
-py nombrearchivo.py
+py catalogos.py
 ```
 
----
-### Requisitos
-
-- Python 3.x  
-- MySQL Server  
-- `mysql-connector`  
-- `tkinter`  
-
----
-
-### Notas
-
-- Asegúrate de que el archivo `db_soriana.py` esté correctamente configurado con las credenciales de acceso a MySQL.
-- Verifica que el servidor de MySQL esté corriendo antes de ejecutar la aplicación.
+**Nota**: Si el archivo principal tiene un nombre diferente (por ejemplo, `app.py`), usa ese nombre en lugar de `main.py`.
 
 
----
+## Estructura del Proyecto
 
-
-## 📁 Estructura del proyecto
-
-- `db_soriana.py`: Conexión y funciones para la base de datos.
-- `empleados.py`: Gestión de empleados.
-- `categorias.py`: Gestión de categorías.
-- `proveedor.py`: Gestión de proveedores.
-- `metodo_de_pago.py`: Gestión de métodos de pago.
-- `unidades.py`: Gestión de unidades.
-- `DBSoriana.sql`: Script para crear la base de datos y las tablas.
-
----
+- `db_soriana.py`: Funciones de conexión y consultas para la base de datos MySQL.
+- `empleados.py`: Interfaz y lógica para la gestión de empleados.
+- `categorias.py`: Interfaz y lógica para la gestión de categorías.
+- `proveedor.py`: Interfaz y lógica para la gestión de proveedores.
+- `metodo_de_pago.py`: Interfaz y lógica para la gestión de métodos de pago.
+- `unidades.py`: Interfaz y lógica para la gestión de unidades.
+- `clientes.py`: Interfaz y lógica para la gestión de clientes.
+- `configuracion.py`: Lógica para autenticación y gestión de usuarios.
+- `configuracion_interfaz.py`: Interfaces Tkinter para la configuración de usuarios.
+- `catalogos.py`: Punto de entrada principal con lógica de inicio de sesión y navegación.
+- `db_soriana.sql`: Script SQL para crear la base de datos y las tablas.
 
