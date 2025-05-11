@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox, StringVar
+from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox
 from clientes import crear_seccion_clientes
 from proveedor import crear_seccion_proveedor
 from unidades import crear_seccion_unidades
@@ -6,6 +6,7 @@ from categorias import crear_seccion_categorias
 from metodo_de_pago import crear_seccion_metodo_de_pago
 from empleados import crear_seccion_empleados
 from configuracion_interfaz import crear_seccion_configuracion, crear_seccion_exportar_base_datos
+from configuracion import Configuracion
 
 """
 Funcion de creacion de ventana
@@ -20,7 +21,12 @@ def creacion_ventana():
 """
 Creacion de presentacion de usuarios registrados
 """
-def ventana_login(ventana):
+def ventana_login(ventana, actualizar=False):
+    # Clear existing widgets
+    if actualizar:
+        for widget in ventana.winfo_children():
+            widget.destroy()
+
     marco_sombra = Frame(ventana, bg="#80C4DE")
     marco_sombra.pack(expand=True, fill="both")
 
@@ -28,55 +34,67 @@ def ventana_login(ventana):
     marco_login.place(relx=0.5, rely=0.5, anchor="center")
     
     Label(marco_login, text="🛒 SORIANA", font=("Arial", 24, "bold"), fg="#1E90FF", bg="white")\
-        .grid(row=0, column=0, columnspan=2, pady=(0,10))
+        .grid(row=0, column=0, columnspan=3, pady=(0,10))
     ttk.Separator(marco_login, orient='horizontal')\
-        .grid(row=1, column=0, columnspan=2, sticky="ew", pady=10)
+        .grid(row=1, column=0, columnspan=3, sticky="ew", pady=10)
        
     info = "Dirección: LAS GRANJAS AQUI MATAN\nCelular: +52 9613765449\nEmail: ag0013155@gmail.com"
     Label(marco_login, text=info, font=("Arial", 12), bg="white", justify="center")\
-        .grid(row=2, column=0, columnspan=2, pady=(10))
+        .grid(row=2, column=0, columnspan=3, pady=(10))
     
-    Label(marco_login, text="Ingrese el usuario:", font=("Arial", 12), bg="white")\
+    # Obtener lista de usuarios para el combobox
+    config = Configuracion("gerente")  # Usamos un usuario temporal para obtener la lista
+    usuarios = list(config.obtener_usuarios().keys())
+    
+    Label(marco_login, text="Seleccione el usuario:", font=("Arial", 12), bg="white")\
         .grid(row=3, column=0, sticky="e", pady=5, padx=5)
-    tipo_usuario = StringVar()
-    opciones = ttk.Combobox(marco_login, values=["Gerente", "Trabajador"], state="readonly", 
-                           textvariable=tipo_usuario, font=("Arial", 12))
-    opciones.grid(row=3, column=1, pady=0, padx=10, ipadx=10, ipady=2)
+    combo_usuario = ttk.Combobox(marco_login, values=usuarios, font=("Arial", 12), state="readonly")
+    combo_usuario.grid(row=3, column=1, pady=0, padx=10, ipadx=10, ipady=2)
+    if usuarios:
+        combo_usuario.set(usuarios[0])  # Seleccionar el primer usuario por defecto
+    
+    # Botón para actualizar la lista de usuarios
+    Button(marco_login, text="Actualizar", font=("Arial", 10), bg="#2196F3", fg="white",
+           command=lambda: ventana_login(ventana, actualizar=True))\
+        .grid(row=3, column=2, pady=5, padx=5)
     
     Label(marco_login, text="Ingrese la contraseña:", font=("Arial", 12), bg="white")\
         .grid(row=4, column=0, sticky="e", pady=5, padx=5)
     entry_contraseña = Entry(marco_login, font=("Arial", 12), show="*")
-    entry_contraseña.grid(row=4, column=1, pady=0, padx=5, ipadx=18, ipady=2)
+    entry_contraseña.grid(row=4, column=1, pady=0, padx=5, ipadx=18, ipady=2, columnspan=2)
     
     Button(marco_login, text="Ingresar", font=("Arial", 13), bg="#4CAF50", fg="white", width=15,
-           command=lambda: validar_usuarios(tipo_usuario.get(), entry_contraseña.get(), ventana, marco_sombra))\
-        .grid(row=5, column=0, columnspan=2, pady=20)
+           command=lambda: validar_usuarios(combo_usuario.get(), entry_contraseña.get(), ventana, marco_sombra))\
+        .grid(row=5, column=0, columnspan=3, pady=20)
 
 """
 Creamos la funcion de validar datos para usuarios
 """
-def validar_usuarios(tipo_usuario, contraseña, ventana, marco_sombra):
-    from configuracion import Configuracion
-    config = Configuracion(tipo_usuario.lower())
-    if config.verificar_credenciales(tipo_usuario.lower(), contraseña):
+def validar_usuarios(usuario, contraseña, ventana, marco_sombra):
+    if not usuario:
+        messagebox.showerror("Error", "Por favor, seleccione un usuario")
+        return
+    config = Configuracion(usuario.lower())
+    if config.verificar_credenciales(usuario.lower(), contraseña):
         marco_sombra.destroy()
-        barra_lateral(ventana, tipo_usuario)
+        barra_lateral(ventana, usuario.lower())
     else:
         messagebox.showerror("Error", "Usuario o contraseña incorrectos")
 
 """
 Creacion de lado lateral para los botones
 """
-def barra_lateral(ventana, tipo_usuario):
+def barra_lateral(ventana, usuario):
     barra_lateral = Frame(ventana, bg="#D3D3D3", width=200)
     barra_lateral.pack(side="left", fill="y")
 
     """Frame para el rol y el boton de salir"""
-    frame_superior= Frame(barra_lateral, bg = "#D3D3D3")
+    frame_superior = Frame(barra_lateral, bg="#D3D3D3")
     frame_superior.pack(fill="x", pady=10, padx=10)
     
     # Rol
-    Label(frame_superior, text=f"{tipo_usuario}", font=("Arial", 14, "bold"), bg = "#DEDEDE").pack()
+    tipo_usuario = "Gerente" if usuario.lower() == "gerente" else "Trabajador"
+    Label(frame_superior, text=f"{tipo_usuario}", font=("Arial", 14, "bold"), bg="#DEDEDE").pack()
 
     # Opciones base disponibles para todos
     opciones = ["Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago"]
@@ -99,6 +117,11 @@ def barra_lateral(ventana, tipo_usuario):
         Button(barra_lateral, text=opcion, bg="#4682B4", fg="white", width=20,
                font=("Arial", 12), command=funciones.get(opcion, lambda: None)).pack(pady=5, padx=10)
 
+    # Botón para cerrar sesión
+    Button(barra_lateral, text="Cerrar Sesión", bg="#F44336", fg="white", width=20,
+           font=("Arial", 12), command=lambda: cerrar_sesion(ventana))\
+        .pack(pady=5, padx=10, side="bottom")
+
     main_frame = Frame(ventana, bg="#E6F0FA")
     main_frame.pack(expand=True, fill="both")
     Label(main_frame, text="PUNTO DE VENTA", font=("Arial", 20, "bold"), bg="#E6F0FA").pack(pady=20)
@@ -119,6 +142,16 @@ def barra_lateral(ventana, tipo_usuario):
 
     Button(main_frame, text="¡COMENZAR AHORA!", font=("Arial", 14, "bold"), bg="#FFA500", fg="white", width=20,
            command=lambda: manejo_clientes(ventana, tipo_usuario, barra_lateral)).pack(pady=30)
+
+"""
+Función para cerrar sesión y volver al login
+"""
+def cerrar_sesion(ventana):
+    # Destroy all widgets in the window
+    for widget in ventana.winfo_children():
+        widget.destroy()
+    # Reload the login screen with updated user list
+    ventana_login(ventana, actualizar=True)
 
 """
 Manejo de la sección de clientes (accesible para todos)
@@ -193,7 +226,7 @@ def manejo_configuracion(ventana, tipo_usuario, barra_lateral):
         def cargar_interfaz(interfaz_func):
             for widget in frame_contenido.winfo_children():
                 widget.destroy()
-            interfaz_func(frame_contenido, barra_lateral)
+            interfaz_func(frame_contenido, barra_lateral, ventana)  # Pass the root window
 
         # Botones alineados horizontalmente
         Button(frame_submenu, text="Configuración Usuarios", font=("Arial", 12), bg="#2196F3", fg="white", width=20,

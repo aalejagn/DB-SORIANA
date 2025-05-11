@@ -10,7 +10,7 @@ def interfaz_clientes():
 
 def crear_seccion_clientes(ventana, barra_lateral):
     # Campos alineados con la base de datos
-    campos = ["Nombre:", "Apellidos:", "Teléfono:", "Monedero:", "Dirección:", "RFC:", "Correo:"]
+    campos = ["Nombre:", "Apellidos:", "Teléfono:", "Dirección:", "RFC:", "Correo:"]
 
     # Limpiamos los widgets existentes, excepto la barra lateral
     if barra_lateral:
@@ -115,16 +115,15 @@ def crear_seccion_clientes(ventana, barra_lateral):
         nombre = entradas["Nombre:"].get().strip()
         apellidos = entradas["Apellidos:"].get().strip()
         telefono = entradas["Teléfono:"].get().strip()
-        monedero = entradas["Monedero:"].get().strip()
         direccion = entradas["Dirección:"].get().strip()
         rfc = entradas["RFC:"].get().strip()
         correo = entradas["Correo:"].get().strip()
 
-        if not all([nombre, apellidos, telefono, direccion, rfc, correo]):
-            messagebox.showerror("Error", "Todos los campos excepto Monedero son obligatorios")
+        if not all([nombre, apellidos, telefono, direccion,correo]):
+            messagebox.showerror("Error", "Todos los campos excepto rfc son obligatorios")
             return
 
-        agregar_cliente(nombre, apellidos, telefono, monedero, direccion, rfc, correo)
+        agregar_cliente(nombre, apellidos, telefono, direccion, rfc, correo)
         ver_clientes(tabla)
         limpiar_campos()
 
@@ -147,20 +146,19 @@ def crear_seccion_clientes(ventana, barra_lateral):
         nombre = entradas["Nombre:"].get().strip()
         apellidos = entradas["Apellidos:"].get().strip()
         telefono = entradas["Teléfono:"].get().strip()
-        monedero = entradas["Monedero:"].get().strip()
         direccion = entradas["Dirección:"].get().strip()
         rfc = entradas["RFC:"].get().strip()
         correo = entradas["Correo:"].get().strip()
 
-        if not all([nombre, apellidos, telefono, direccion, rfc, correo]):
-            messagebox.showerror("Error", "Todos los campos excepto Monedero son obligatorios")
+        if not all([nombre, apellidos, telefono, direccion, correo]):
+            messagebox.showerror("Error", "Todos los campos excepto rfc son obligatorios")
             return
 
         if not telefono_original_var[0]:
             messagebox.showerror("Error", "Seleccione un cliente para actualizar")
             return
 
-        actualizar_cliente(telefono_original_var[0], nombre, apellidos, telefono, monedero, direccion, rfc, correo)
+        actualizar_cliente(telefono_original_var[0], nombre, apellidos, telefono, direccion, rfc, correo)
         ver_clientes(tabla)
         limpiar_campos()
 

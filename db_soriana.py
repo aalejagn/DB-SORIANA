@@ -15,15 +15,15 @@ def obtener_conexion():
         return None
 
 # Funciones para clientes
-def agregar_cliente(nombre, apellidos, telefono, monedero, direccion, rfc, correo):
+def agregar_cliente(nombre, apellidos, telefono, direccion, rfc, correo):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     
     query = """
-    INSERT INTO clientes (nombre, apellidos, telefono, monedero, direccion, rfc, correo)
+    INSERT INTO clientes (nombre, apellidos, telefono, direccion, rfc, correo)
     VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
-    valores = (nombre, apellidos, telefono, monedero, direccion, rfc, correo)
+    valores = (nombre, apellidos, telefono, direccion, rfc, correo)
     
     try:
         cursor.execute(query, valores)
@@ -43,7 +43,7 @@ def ver_clientes(tabla):
     
     try:
         cursor = conexion.cursor()
-        cursor.execute("SELECT nombre, apellidos, telefono, monedero, direccion, rfc, correo FROM clientes")
+        cursor.execute("SELECT nombre, apellidos, telefono, direccion, rfc, correo FROM clientes")
         rows = cursor.fetchall()
         
         for row in tabla.get_children():
@@ -80,7 +80,7 @@ def eliminar_cliente(telefono):
         cursor.close()
         conexion.close()
 
-def actualizar_cliente(telefono_original, nombre, apellidos, telefono, monedero, direccion, rfc, correo):
+def actualizar_cliente(telefono_original, nombre, apellidos, telefono, direccion, rfc, correo):
     conexion = obtener_conexion()
     if not conexion:
         return
@@ -88,11 +88,11 @@ def actualizar_cliente(telefono_original, nombre, apellidos, telefono, monedero,
     cursor = conexion.cursor()
     query = """
     UPDATE clientes
-    SET nombre = %s, apellidos = %s, telefono = %s, monedero = %s, direccion = %s, rfc = %s, correo = %s
+    SET nombre = %s, apellidos = %s, telefono = %s, direccion = %s, rfc = %s, correo = %s
     WHERE telefono = %s
     """
     
-    valores = (nombre, apellidos, telefono, monedero, direccion, rfc, correo, telefono_original)
+    valores = (nombre, apellidos, telefono, direccion, rfc, correo, telefono_original)
     
     try:
         cursor.execute(query, valores)
@@ -685,3 +685,30 @@ def buscar_unidad(id_unidad):
         cursor.close()
         conexion.close()
 
+
+def inicializar_usuarios():
+    """
+    Inserta usuarios predeterminados si no existen.
+    """
+    usuarios_predeterminados = [
+        ("gerente", "2327")
+    ]
+    
+    conexion = obtener_conexion()
+    if not conexion:
+        return
+
+    cursor = conexion.cursor()
+    try:
+        for usuario, contraseña in usuarios_predeterminados:
+            query = "INSERT IGNORE INTO usuarios (usuario, contraseña) VALUES (%s, %s)"
+            cursor.execute(query, (usuario, contraseña))
+        conexion.commit()
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error", f"Error al inicializar usuarios: {err}")
+    finally:
+        cursor.close()
+        conexion.close()
+
+# Crear la tabla e inicializar usuarios al iniciar el programa
+inicializar_usuarios()

@@ -2,7 +2,7 @@ from tkinter import Label, Frame, Button, ttk, messagebox, Entry
 from configuracion import Configuracion
 from exportar_db import listar_tablas, exportar_tabla_a_csv
 
-def crear_seccion_exportar_base_datos(ventana, barra_lateral):
+def crear_seccion_exportar_base_datos(ventana, barra_lateral, ventana_principal):
     frame_principal = Frame(ventana, bg="#E6F0FA")
     frame_principal.pack(expand=True, fill="both")
 
@@ -17,13 +17,11 @@ def crear_seccion_exportar_base_datos(ventana, barra_lateral):
 
     Label(frame_izquierdo, text="Exportar Base de Datos", font=("Arial", 16, "bold"), bg="#E6F0FA").pack(pady=10)
 
-    # Frame para el selector de tablas
     frame_selector = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_selector.pack(fill="x", pady=5)
 
     Label(frame_selector, text="Seleccionar tabla:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
     
-    # Combobox para seleccionar tabla
     tablas = listar_tablas()
     combo_tablas = ttk.Combobox(frame_selector, values=tablas, font=("Arial", 12), state="readonly")
     combo_tablas.pack(side="left", padx=(0, 10))
@@ -37,13 +35,12 @@ def crear_seccion_exportar_base_datos(ventana, barra_lateral):
             return
         exportar_tabla_a_csv(tabla_seleccionada)
 
-    # Botón para exportar
     Button(frame_derecho, text="Exportar a CSV", font=("Arial", 10), bg="#4CAF50", fg="white", width=15,
            command=exportar_seleccionada).pack(pady=5)
 
     return frame_principal
 
-def crear_seccion_configuracion(ventana, barra_lateral):
+def crear_seccion_configuracion(ventana, barra_lateral, ventana_principal):
     frame_principal = Frame(ventana, bg="#E6F0FA")
     frame_principal.pack(expand=True, fill="both")
 
@@ -96,7 +93,7 @@ def crear_seccion_configuracion(ventana, barra_lateral):
 
     def ver_usuarios():
         config = Configuracion("gerente")
-        usuarios = config.usuarios
+        usuarios = config.obtener_usuarios()
         for row in tabla.get_children():
             tabla.delete(row)
         for usuario, contraseña in usuarios.items():
@@ -112,23 +109,21 @@ def crear_seccion_configuracion(ventana, barra_lateral):
             return
 
         config = Configuracion("gerente")
+        usuarios = config.obtener_usuarios()
         for row in tabla.get_children():
             tabla.delete(row)
         for entrada in entradas.values():
             entrada.delete(0, 'end')
         usuario_original_var[0] = None
 
-        if usuario in config.usuarios:
-            contraseña = config.usuarios[usuario]
+        if usuario in usuarios:
+            contraseña = usuarios[usuario]
             tabla.insert("", "end", values=(usuario, contraseña))
             entradas["Usuario:"].insert(0, usuario)
             entradas["Contraseña:"].insert(0, contraseña)
             usuario_original_var[0] = usuario
         else:
             messagebox.showwarning("No encontrado", f"No se encontró el usuario {usuario}")
-
-    Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
-           command=buscar_y_mostrar).pack(side="left", pady=5, padx=5)
 
     def agregar():
         usuario = entradas["Usuario:"].get().strip()
@@ -138,20 +133,31 @@ def crear_seccion_configuracion(ventana, barra_lateral):
             messagebox.showerror("Error", "Todos los campos son obligatorios")
             return
 
+        if usuario.lower() == "gerente":
+            messagebox.showerror("Error", "No se puede agregar un usuario con el nombre 'gerente'")
+            return
+
         config = Configuracion("gerente")
-        config.agregar_usuario(usuario, contraseña)
-        ver_usuarios()
-        limpiar_campos()
+        if config.agregar_usuario(usuario, contraseña):
+            ver_usuarios()
+            limpiar_campos()
+            messagebox.showinfo("Éxito", f"Usuario {usuario} agregado correctamente")
 
     def eliminar():
         usuario = entradas["Usuario:"].get().strip()
         if not usuario:
             messagebox.showerror("Error", "El campo Usuario es obligatorio")
             return
+
+        if usuario.lower() == "gerente":
+            messagebox.showerror("Error", "No se puede eliminar el usuario 'gerente'")
+            return
+
         config = Configuracion("gerente")
-        config.eliminar_usuario(usuario)
-        ver_usuarios()
-        limpiar_campos()
+        if config.eliminar_usuario(usuario):
+            ver_usuarios()
+            limpiar_campos()
+            messagebox.showinfo("Éxito", f"Usuario {usuario} eliminado correctamente")
 
     def actualizar_datos():
         usuario = entradas["Usuario:"].get().strip()
@@ -165,16 +171,24 @@ def crear_seccion_configuracion(ventana, barra_lateral):
             messagebox.showerror("Error", "Seleccione un usuario para actualizar")
             return
 
+        if usuario_original_var[0].lower() == "gerente":
+            messagebox.showerror("Error", "No se puede modificar el usuario 'gerente'")
+            return
+
         config = Configuracion("gerente")
-        config.modificar_contraseña(usuario_original_var[0], contraseña)
-        ver_usuarios()
-        limpiar_campos()
+        if config.modificar_contraseña(usuario_original_var[0], contraseña):
+            ver_usuarios()
+            limpiar_campos()
+            messagebox.showinfo("Éxito", f"Usuario {usuario_original_var[0]} actualizado correctamente")
 
     def limpiar_campos():
         for entrada in entradas.values():
             entrada.delete(0, 'end')
         entry_busqueda.delete(0, 'end')
         usuario_original_var[0] = None
+
+    Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
+           command=buscar_y_mostrar).pack(side="left", pady=5, padx=5)
 
     btn_agregar = Button(frame_derecho, text="Agregar", font=("Arial", 10), bg="#4CAF50", fg="white", width=15,
                          command=agregar)

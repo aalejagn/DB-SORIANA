@@ -29,10 +29,9 @@ CREATE TABLE categorias (
 
 -- Creación de la tabla de clientes
 CREATE TABLE clientes (
-	nombre VARCHAR(40) NOT NULL,
+    nombre VARCHAR(40) NOT NULL,
     apellidos VARCHAR(50) NOT NULL, 
     telefono VARCHAR(15) PRIMARY KEY,
-	monedero DECIMAL(10,2) DEFAULT 0.00,
     direccion TEXT NOT NULL,
     rfc VARCHAR(13) NOT NULL UNIQUE,
     correo VARCHAR(100) NOT NULL
@@ -61,4 +60,8 @@ CREATE TABLE unidades (
     descripcion TEXT
 );
 
-SELECT * FROM unidades
+-- Creación de la tabla de usuarios
+CREATE TABLE usuarios (
+    usuario VARCHAR(50) PRIMARY KEY,
+    contraseña VARCHAR(50) NOT NULL
+);
