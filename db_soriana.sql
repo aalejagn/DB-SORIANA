@@ -1,8 +1,8 @@
 -- Eliminar la base de datos si existe
-DROP DATABASE IF EXISTS db_soriana;
+DROP DATABASE IF EXISTS db23270631;
 
 -- Crear la base de datos
-CREATE DATABASE db_soriana;
+CREATE DATABASE db23270631;
 
 -- Usar la base de datos
 USE db_soriana;

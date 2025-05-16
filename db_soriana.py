@@ -8,7 +8,7 @@ def obtener_conexion():
             host="localhost",  # Host local
             user="root",
             password="23270631@",
-            database="db_soriana"
+            database="db23270631"
         )
     except mysql.connector.Error as e:
         messagebox.showerror("Error", f"No se pudo conectar a la base de datos: {e}")
@@ -21,7 +21,7 @@ def agregar_cliente(nombre, apellidos, telefono, direccion, rfc, correo):
     
     query = """
     INSERT INTO clientes (nombre, apellidos, telefono, direccion, rfc, correo)
-    VALUES (%s, %s, %s, %s, %s, %s, %s)
+    VALUES (%s, %s, %s, %s, %s, %s)
     """
     valores = (nombre, apellidos, telefono, direccion, rfc, correo)
     
@@ -112,7 +112,7 @@ def buscar_cliente(telefono):
     if not conexion:
         return None
     cursor = conexion.cursor()
-    query = "SELECT nombre, apellidos, telefono, monedero, direccion, rfc, correo FROM clientes WHERE telefono = %s"
+    query = "SELECT nombre, apellidos, telefono, direccion, rfc, correo FROM clientes WHERE telefono = %s"
     valores = (telefono,)
     try:
         cursor.execute(query, valores)
