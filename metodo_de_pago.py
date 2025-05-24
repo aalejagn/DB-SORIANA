@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox
+from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox,Scrollbar
 from db_soriana import agregar_metodo_de_pago, eliminar_metodo_de_pago, actualizar_metodo_de_pago, ver_metodo_de_pago, buscar_metodo_de_pago
 
 def interfaz_metodo_de_pago():
@@ -46,12 +46,28 @@ def crear_seccion_metodo_de_pago(ventana, barra_lateral):
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-    tabla = ttk.Treeview(frame_izquierdo, columns=campos, show="headings", height=15)
+        #TODO: Creamos un frame para la tabla y el scrollbar
+    frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
+    frame_tabla.pack(padx=10,fill="both", expand=True)
+
+    #TODO: Creamos el scrollbar vertical
+    scrollbar = Scrollbar(frame_tabla, orient="vertical")
+    scrollbar1 = Scrollbar(frame_tabla,orient="horizontal")
+    scrollbar.pack(side="right", fill="y")
+    scrollbar1.pack(side="bottom", fill="x")
+    # Treeview table
+    # TODO: Creamos la tabla (Treeview) y la asociamos a los scrollbars     
+    tabla = ttk.Treeview(frame_tabla, columns=campos, show="headings", height=15, 
+                     yscrollcommand=scrollbar.set, xscrollcommand=scrollbar1.set)
     for col in campos:
         tabla.heading(col, text=col)
-        tabla.column(col, width=150)
+        tabla.column(col, width=100)
     tabla.pack(pady=10, fill="both", expand=True)
 
+    #TODO: Configuramos el scrollbar para que controle el desplzamineot vertical de la tabla
+    scrollbar.config(command=tabla.yview)
+    scrollbar1.config(command=tabla.xview)
+    
     id_metodo_original_var = [None]
 
     def on_select(event):

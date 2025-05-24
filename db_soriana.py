@@ -94,6 +94,7 @@ def actualizar_cliente(telefono_original, nombre, apellidos, telefono, direccion
     
     valores = (nombre, apellidos, telefono, direccion, rfc, correo, telefono_original)
     
+    
     try:
         cursor.execute(query, valores)
         conexion.commit()
@@ -686,6 +687,135 @@ def buscar_unidad(id_unidad):
         conexion.close()
 
 
+# TODO: MANEJO DE FUNCIONES PARA EL DB SORIANA CON ARTICULOS
+
+def agregar_articulo(codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad):
+    conexion = obtener_conexion()
+    if not conexion:
+        return
+    
+    cursor = conexion.cursor()
+    
+    query = """
+    INSERT INTO articulos (codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    valores = (codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad)
+    
+    try:
+        cursor.execute(query, valores)
+        conexion.commit()
+        messagebox.showinfo("Éxito", "Artículo agregado correctamente")
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error", f"Hubo un problema al agregar el artículo: {err}")
+    finally:
+        cursor.close()
+        conexion.close()
+
+def ver_articulos(tabla):
+    conexion = obtener_conexion()
+    if not conexion:
+        return False
+    
+    try:
+        cursor = conexion.cursor()
+        query = """
+        SELECT codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad 
+        FROM articulos
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        
+        # Clear existing table data
+        for row in tabla.get_children():
+            tabla.delete(row)
+        
+        # Insert new data into the table
+        for row in rows:
+            tabla.insert("", "end", values=row)
+            
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Error en la consulta: {e}")
+        return False
+    finally:
+        cursor.close()
+        conexion.close()
+    return True
+
+def eliminar_articulos(codigo):
+    conexion = obtener_conexion()
+    if not conexion:
+        return
+    
+    cursor = conexion.cursor()
+    query = "DELETE FROM articulos WHERE codigo = %s"
+    valores = (codigo,)
+    
+    try:
+        cursor.execute(query, valores)
+        conexion.commit()
+        if cursor.rowcount > 0:
+            messagebox.showinfo("Éxito", "Artículo eliminado correctamente")
+        else:
+            messagebox.showwarning("No encontrado", "No se encontró el artículo")
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error", f"Hubo un problema al eliminar el artículo: {err}")
+    finally:
+        cursor.close()
+        conexion.close()
+
+def actualizar_articulo(codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad):
+    conexion = obtener_conexion()
+    if not conexion:
+        return
+    
+    cursor = conexion.cursor()
+    query = """
+    UPDATE articulos
+    SET nombre = %s, precio = %s, costo = %s, existencia = %s, descripcion = %s, fecha_caducidad = %s, 
+        categoria_codigo = %s, id_proveedor = %s, id_unidad = %s
+    WHERE codigo = %s
+    """
+    valores = (nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad, codigo)
+    
+    try:
+        cursor.execute(query, valores)
+        conexion.commit()
+        if cursor.rowcount > 0:
+            messagebox.showinfo("Éxito", "Artículo actualizado correctamente")
+        else:
+            messagebox.showinfo("Advertencia", "Artículo no encontrado")
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Hubo un problema al actualizar el artículo: {e}")
+    finally:
+        cursor.close()
+        conexion.close()
+
+def buscar_articulo(codigo):
+    conexion = obtener_conexion()
+    if not conexion:
+        return None
+    
+    cursor = conexion.cursor()
+    query = """
+    SELECT codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad 
+    FROM articulos WHERE codigo = %s
+    """
+    valores = (codigo,)
+    
+    try:
+        cursor.execute(query, valores)
+        row = cursor.fetchone()
+        print(f"Resultado de búsqueda para {codigo}: {row}")
+        return row
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error", f"Hubo un problema al buscar el artículo: {err}")
+        return None
+    finally:
+        cursor.close()
+        conexion.close()
+
+
 def inicializar_usuarios():
     """
     Inserta usuarios predeterminados si no existen.
@@ -708,7 +838,25 @@ def inicializar_usuarios():
         messagebox.showerror("Error", f"Error al inicializar usuarios: {err}")
     finally:
         cursor.close()
-        conexion.close()
 
+        conexion.close()
+def registrar_venta(codigo_articulo):
+    conexion = obtener_conexion()
+    if not conexion:
+        messagebox.showerror("Error", "No se pudo conectar a la base de datos")
+        return
+    cursor = conexion.cursor()
+    query = "INSERT INTO ventas (codigo_articulo, fecha_venta) VALUES (%s, NOW())"
+    valores = (codigo_articulo,)
+    try:
+        cursor.execute(query, valores)
+        conexion.commit()
+        # TODO: Mostrar mensaje de éxito opcional para depuración
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error", f"Error al registrar venta: {err}")
+    finally:
+        cursor.close()
+        conexion.close()
+        
 # Crear la tabla e inicializar usuarios al iniciar el programa
 inicializar_usuarios()

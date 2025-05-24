@@ -1,4 +1,4 @@
-from tkinter import Label, Frame, Button, ttk, messagebox, Entry
+from tkinter import Label, Frame, Button, ttk, messagebox, Entry,Scrollbar
 from configuracion import Configuracion
 
 def crear_seccion_configuracion(ventana, barra_lateral, ventana_principal):
@@ -33,11 +33,24 @@ def crear_seccion_configuracion(ventana, barra_lateral, ventana_principal):
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-    tabla = ttk.Treeview(frame_izquierdo, columns=campos, show="headings", height=15)
+        #TODO: Creamos un frame para la tabla y el scrollbar
+    frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
+    frame_tabla.pack(padx=10,fill="both", expand=True)
+
+    #TODO: Creamos el scrollbar vertical
+    scrollbar = Scrollbar(frame_tabla, orient="vertical")
+    scrollbar.pack(side="right", fill="y")
+    # Treeview table
+    # TODO: Creamos la tabla (Treeview) y la asociamos a los scrollbars     
+    tabla = ttk.Treeview(frame_tabla, columns=campos, show="headings", height=15, 
+                     yscrollcommand=scrollbar.set)
     for col in campos:
         tabla.heading(col, text=col)
-        tabla.column(col, width=150)
+        tabla.column(col, width=100)
     tabla.pack(pady=10, fill="both", expand=True)
+
+    #TODO: Configuramos el scrollbar para que controle el desplzamineot vertical de la tabla
+    scrollbar.config(command=tabla.yview)
 
     usuario_original_var = [None]
 

@@ -52,7 +52,7 @@ pip install mysql-connector-python tk
 
 ### Paso 5: Configurar la Base de Datos
 1. **Ejecutar el Script SQL**:
-   - Usa el script `db_soriana.sql` incluido en el proyecto para crear la base de datos y las tablas.
+   - Usa el script `db23270631.sql` incluido en el proyecto para crear la base de datos y las tablas.
    - Ejecuta:
      ```bash
      mysql -u root -p < db_soriana.sql
@@ -61,7 +61,7 @@ pip install mysql-connector-python tk
 
 
 ### Paso 6: Actualizar la Configuración de la Base de Datos
-Asegúrate de que el archivo `db_soriana.py` contenga las credenciales correctas de MySQL.
+Asegúrate de que el archivo `db23270631.py` contenga las credenciales correctas de MySQL.
 
 2. Verifica o actualiza la configuración:
    ```python
@@ -69,7 +69,7 @@ Asegúrate de que el archivo `db_soriana.py` contenga las credenciales correctas
        'host': 'localhost',
        'user': 'root',
        'password': '23270631@',
-       'database': 'db_soriana'
+       'database': 'db23270631'
    }
    ```
 
@@ -97,5 +97,5 @@ py catalogos.py
 - `configuracion.py`: Lógica para autenticación y gestión de usuarios.
 - `configuracion_interfaz.py`: Interfaces Tkinter para la configuración de usuarios.
 - `catalogos.py`: Punto de entrada principal con lógica de inicio de sesión y navegación.
-- `db_soriana.sql`: Script SQL para crear la base de datos y las tablas.
+- `23270631.sql`: Script SQL para crear la base de datos y las tablas.
 
