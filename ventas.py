@@ -1,7 +1,8 @@
 from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox, StringVar
-from db_soriana import buscar_articulo, agregar_venta, actualizar_stock, buscar_cliente, buscar_metodo_de_pago
+from db_soriana import buscar_articulo, agregar_venta, actualizar_stock, buscar_cliente, buscar_metodo_de_pago, ver_metodo_de_pago
 from datetime import datetime
 import uuid
+import mysql.connector
 
 # Clase para almacenar el estado de la venta
 class VentaEstado:
@@ -57,14 +58,50 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
     Label(frame_search, text="Teléfono Cliente:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
     entry_telefono = Entry(frame_search, font=("Arial", 12), width=15)
     entry_telefono.pack(side="left", padx=(0, 10))
-    # Restaurar teléfono del cliente
     entry_telefono.insert(0, venta_estado.telefono)
+
+    # Payment method frame
+    frame_pago = Frame(frame_izquierdo, bg="#E6F0FA")
+    frame_pago.pack(fill="x", pady=5)
+    Label(frame_pago, text="Método de Pago:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    metodo_pago_var = StringVar()
+    combo_metodo_pago = ttk.Combobox(frame_pago, textvariable=metodo_pago_var, font=("Arial", 12), state="readonly", width=15)
+    combo_metodo_pago.pack(side="left", padx=(0, 10))
+
+    # Load payment methods from the database
+    def cargar_metodos_pago():
+        conexion = obtener_conexion()
+        if not conexion:
+            messagebox.showerror("Error", "No se pudo conectar a la base de datos para cargar los métodos de pago.")
+            return
+        try:
+            cursor = conexion.cursor()
+            cursor.execute("SELECT id_metodo, tipo FROM metodo_de_pago")
+            metodos = cursor.fetchall()
+            if not metodos:
+                messagebox.showwarning("Advertencia", "No hay métodos de pago registrados. Por favor, añada un método de pago.")
+                combo_metodo_pago['values'] = []
+                metodo_pago_var.set("")
+                return
+            # Formato: "id_metodo - tipo"
+            opciones = [f"{metodo[0]} - {metodo[1]}" for metodo in metodos]
+            combo_metodo_pago['values'] = opciones
+            # Seleccionar el primer método por defecto, si existe
+            metodo_pago_var.set(opciones[0] if opciones else "")
+        except mysql.connector.Error as e:
+            messagebox.showerror("Error", f"Error al cargar los métodos de pago: {e}")
+        finally:
+            cursor.close()
+            conexion.close()
+
+    cargar_metodos_pago()  # Call the function to load payment methods
+    
     entry_codigo.focus_set()
 
-    # Table frame
+    # Table frame (reduced height)
     frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_tabla.pack(padx=10, fill="both", expand=True)
-    tabla = ttk.Treeview(frame_tabla, columns=campos, show="headings", height=15)
+    tabla = ttk.Treeview(frame_tabla, columns=campos, show="headings", height=12)
     for col in campos:
         tabla.heading(col, text=col)
         tabla.column(col, width=100)
@@ -74,7 +111,6 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
     for articulo in venta_estado.articulos:
         tabla.insert("", "end", values=articulo)
 
-    # Llenar los Entry al seleccionar un artículo en la tabla
     def on_select(event):
         selected_item = tabla.selection()
         if selected_item:
@@ -139,7 +175,6 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
                 for widget in ventana.winfo_children():
                     if widget != barra_lateral:
                         widget.destroy()
-                # Guardar estado antes de cambiar
                 venta_estado.telefono = entry_telefono.get().strip()
                 crear_seccion_articulos(ventana, barra_lateral, codigo)
         entry_codigo.focus_set()
@@ -170,7 +205,6 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
             precio = resultado[2]
             subtotal = precio * nueva_cantidad
             articulo = (codigo, resultado[1], precio, nueva_cantidad, subtotal)
-            # Actualizar en tabla y estado
             tabla.item(selected_item, values=articulo)
             index = next(i for i, item in enumerate(venta_estado.articulos) if item[0] == codigo)
             venta_estado.articulos[index] = articulo
@@ -214,15 +248,20 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
             messagebox.showerror("Error", "El cliente con ese teléfono no existe")
             return
 
+        # Extract id_metodo from Combobox selection
+        metodo_seleccionado = metodo_pago_var.get()
+        if not metodo_seleccionado:
+            messagebox.showerror("Error", "Seleccione un método de pago")
+            return
+        id_metodo = metodo_seleccionado.split(" - ")[0]
+        if not buscar_metodo_de_pago(id_metodo):
+            messagebox.showerror("Error", f"El método de pago con ID {id_metodo} no existe en la base de datos")
+            return
+
         id_venta = str(uuid.uuid4())[:10]
-        id_metodo = 1
         total = float(total_var.get())
         fecha = datetime.now().strftime('%Y-%m-%d')
         id_empleado = 1
-
-        if not buscar_metodo_de_pago(id_metodo):
-            messagebox.showerror("Error", "Método de pago no válido")
-            return
 
         agregar_venta(id_venta, telefono, id_metodo, total, fecha, id_empleado)
         for item in tabla.get_children():
@@ -232,7 +271,6 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
         messagebox.showinfo("Éxito", "Venta registrada correctamente")
         for row in tabla.get_children():
             tabla.delete(row)
-        # Resetear estado
         venta_estado.articulos = []
         venta_estado.total = "0.00"
         venta_estado.telefono = ""
@@ -241,17 +279,24 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
         entry_codigo.delete(0, 'end')
         entry_cantidad.delete(0, 'end')
         entry_cantidad.insert(0, "1")
+        combo_metodo_pago.set(combo_metodo_pago['values'][0] if combo_metodo_pago['values'] else "")
         entry_codigo.focus_set()
 
-    def limpiar_venta():
+    def borrar_venta():
         for row in tabla.get_children():
             tabla.delete(row)
-        # Resetear estado
         venta_estado.articulos = []
         venta_estado.total = "0.00"
         venta_estado.telefono = ""
         total_var.set("0.00")
         entry_telefono.delete(0, 'end')
+        entry_codigo.delete(0, 'end')
+        entry_cantidad.delete(0, 'end')
+        entry_cantidad.insert(0, "1")
+        combo_metodo_pago.set(combo_metodo_pago['values'][0] if combo_metodo_pago['values'] else "")
+        entry_codigo.focus_set()
+
+    def limpiar_entradas():
         entry_codigo.delete(0, 'end')
         entry_cantidad.delete(0, 'end')
         entry_cantidad.insert(0, "1")
@@ -259,14 +304,30 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
 
     Button(frame_derecho, text="Confirmar Venta", font=("Arial", 10), bg="#4CAF50", fg="white", width=15,
            command=confirmar_venta).pack(pady=5)
-    Button(frame_derecho, text="Limpiar", font=("Arial", 10), bg="#FFC107", fg="black", width=15,
-           command=limpiar_venta).pack(pady=5)
+    Button(frame_derecho, text="Borrar Venta", font=("Arial", 10), bg="#FFC107", fg="black", width=15,
+           command=borrar_venta).pack(pady=5)
+    Button(frame_derecho, text="Limpiar", font=("Arial", 10), bg="#FF9800", fg="black", width=15,
+           command=limpiar_entradas).pack(pady=5)
     Button(frame_derecho, text="Eliminar Producto", font=("Arial", 10), fg="white", bg="#F44336", width=15,
            command=eliminar_producto).pack(pady=5)
-    Button(frame_derecho, text="Actualizar ", font=("Arial", 10), bg="#2196F3", fg="white", width=15,
+    Button(frame_derecho, text="Actualizar", font=("Arial", 10), bg="#2196F3", fg="white", width=15,
            command=actualizar_producto).pack(pady=5)
 
     return frame_principal
+
+# Función auxiliar para conectar a la base de datos (necesaria para cargar_metodos_pago)
+def obtener_conexion():
+    import mysql.connector
+    try:
+        return mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="23270631@",
+            database="db23270631"
+        )
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"No se pudo conectar a la base de datos: {e}")
+        return None
 
 if __name__ == "__main__":
     interfaz_ventas()

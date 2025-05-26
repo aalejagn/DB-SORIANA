@@ -108,21 +108,28 @@ def actualizar_cliente(telefono_original, nombre, apellidos, telefono, direccion
         cursor.close()
         conexion.close()
 
-def buscar_cliente(telefono):
+def buscar_cliente(criterio, valor):
     conexion = obtener_conexion()
     if not conexion:
-        return None
+        return []
     cursor = conexion.cursor()
-    query = "SELECT nombre, apellidos, telefono, direccion, rfc, correo FROM clientes WHERE telefono = %s"
-    valores = (telefono,)
+    query = ""
+    valores = ()
+    
+    if criterio == "telefono":
+        query = "SELECT nombre, apellidos, telefono, direccion, rfc, correo FROM clientes WHERE telefono = %s"
+        valores = (valor,)
+    elif criterio == "nombre":
+        query = "SELECT nombre, apellidos, telefono, direccion, rfc, correo FROM clientes WHERE CONCAT(nombre, ' ', apellidos) LIKE %s"
+        valores = (f"%{valor}%",)
+    
     try:
         cursor.execute(query, valores)
-        row = cursor.fetchone()
-        print(f"Resultado de búsqueda para {telefono}: {row}")
-        return row
+        rows = cursor.fetchall()
+        return rows  # Retorna lista de clientes (puede ser vacía o con múltiples resultados)
     except mysql.connector.Error as err:
         messagebox.showerror("Error", f"Hubo un problema al buscar el cliente: {err}")
-        return None
+        return []
     finally:
         cursor.close()
         conexion.close()
@@ -217,26 +224,28 @@ def actualizar_catalogo(codigo_original, codigo, nombre, descripcion):
         cursor.close()
         conexion.close()
 
-def buscar_catalogo(codigo):
+def buscar_catalogo(criterio, valor):
     conexion = obtener_conexion()
     if not conexion:
-        return False
-    
+        return []
     cursor = conexion.cursor()
-    query = """
-    SELECT codigo, nombre, descripcion FROM categorias WHERE codigo = %s
-    """
-    valores = (codigo,)
+    query = ""
+    valores = ()
+    
+    if criterio == "codigo":
+        query = "SELECT codigo, nombre, descripcion FROM categorias WHERE codigo = %s"
+        valores = (valor,)
+    elif criterio == "nombre":
+        query = "SELECT codigo, nombre, descripcion FROM categorias WHERE nombre LIKE %s"
+        valores = (f"%{valor}%",)
     
     try:
         cursor.execute(query, valores)
-        row = cursor.fetchone()
-        print(f"Resultado de busqueda para {codigo}: {row}")
-        return row
+        rows = cursor.fetchall()
+        return rows
     except mysql.connector.Error as e:
-        messagebox.showerror("Error", f"Hubo un problema al buscar el catalogo: {e}")
-        return None
-    
+        messagebox.showerror("Error", f"Hubo un problema al buscar el catálogo: {e}")
+        return []
     finally:
         cursor.close()
         conexion.close()
@@ -335,26 +344,31 @@ def actualizar_empleado(id_empleado_original, nombre, apellidos, telefono, edad,
         cursor.close()
         conexion.close()
 
-def buscar_trabajador(id_empleado):
+def buscar_trabajador(criterio, valor):
     conexion = obtener_conexion()
     if not conexion:
-        return None
-
+        return []
     cursor = conexion.cursor()
-    query = """
-    SELECT id_empleado, nombre, apellidos, telefono, edad, puesto, sueldo, fecha_contratacion, rfc
-    FROM empleados WHERE id_empleado = %s
-    """
-    valores = (id_empleado,)
-
+    query = ""
+    valores = ()
+    
+    if criterio == "id_empleado":
+        query = "SELECT id_empleado, nombre, apellidos, telefono, edad, puesto, sueldo, fecha_contratacion, rfc FROM empleados WHERE id_empleado = %s"
+        valores = (valor,)
+    elif criterio == "telefono":
+        query = "SELECT id_empleado, nombre, apellidos, telefono, edad, puesto, sueldo, fecha_contratacion, rfc FROM empleados WHERE telefono LIKE %s"
+        valores = (f"%{valor}%",)  # Coincidencia parcial
+    elif criterio == "nombre":
+        query = "SELECT id_empleado, nombre, apellidos, telefono, edad, puesto, sueldo, fecha_contratacion, rfc FROM empleados WHERE CONCAT(nombre, ' ', apellidos) LIKE %s"
+        valores = (f"%{valor}%",)
+    
     try:
         cursor.execute(query, valores)
-        row = cursor.fetchone()
-        print(f"Resultado de la busqueda para el id_empleado {id_empleado}: {row}")
-        return row
+        rows = cursor.fetchall()
+        return rows
     except mysql.connector.Error as e:
-        messagebox.showerror("Error", f"Hubo un problema al buscar el trabajador {e}")
-        return None
+        messagebox.showerror("Error", f"Hubo un problema al buscar el trabajador: {e}")
+        return []
     finally:
         cursor.close()
         conexion.close()
@@ -446,24 +460,31 @@ def actualizar_proveedor(id_proveedor_original, id_proveedor, nombre, telefono, 
         cursor.close()
         conexion.close()
 
-def buscar_proveedor(id_proveedor):
+def buscar_proveedor(criterio, valor):
     conexion = obtener_conexion()
     if not conexion:
-        return None
+        return []
     cursor = conexion.cursor()
-    query = """
-    SELECT id_proveedor, nombre, telefono, empresa, descripcion
-    FROM proveedor WHERE id_proveedor = %s
-    """
-    valores = (id_proveedor,)
-    try :
+    query = ""
+    valores = ()
+    
+    if criterio == "id_proveedor":
+        query = "SELECT id_proveedor, nombre, telefono, empresa, descripcion FROM proveedor WHERE id_proveedor = %s"
+        valores = (valor,)
+    elif criterio == "telefono":
+        query = "SELECT id_proveedor, nombre, telefono, empresa, descripcion FROM proveedor WHERE telefono LIKE %s"
+        valores = (f"%{valor}%",)
+    elif criterio == "nombre":
+        query = "SELECT id_proveedor, nombre, telefono, empresa, descripcion FROM proveedor WHERE nombre LIKE %s"
+        valores = (f"%{valor}%",)
+    
+    try:
         cursor.execute(query, valores)
-        row = cursor.fetchone()
-        print(f"Resultado de busqueda para id_proveedor {id_proveedor}: {row}")
-        return row
+        rows = cursor.fetchall()
+        return rows
     except mysql.connector.Error as e:
         messagebox.showerror("Error", f"Hubo un problema al buscar el proveedor: {e}")
-        return None
+        return []
     finally:
         cursor.close()
         conexion.close()
@@ -555,27 +576,32 @@ def actualizar_metodo_de_pago(id_metodo_original, id_metodo, tipo, descripcion):
         cursor.close()
         conexion.close()
 
-def buscar_metodo_de_pago(id_metodo):
+def buscar_metodo_de_pago(criterio, valor):
     conexion = obtener_conexion()
     if not conexion:
-        return None
+        return []
     cursor = conexion.cursor()
-    query = """
-    SELECT id_metodo, tipo, descripcion
-    FROM metodo_de_pago WHERE id_metodo = %s
-    """
-    valores = (id_metodo,)
+    query = ""
+    valores = ()
+    
+    if criterio == "id_metodo":
+        query = "SELECT id_metodo, tipo, descripcion FROM metodo_de_pago WHERE id_metodo = %s"
+        valores = (valor,)
+    elif criterio == "tipo":
+        query = "SELECT id_metodo, tipo, descripcion FROM metodo_de_pago WHERE tipo LIKE %s"
+        valores = (f"%{valor}%",)
+    
     try:
         cursor.execute(query, valores)
-        row = cursor.fetchone()
-        print(f"Resultado de busqueda para id_metodo {id_metodo}: {row}")
-        return row
+        rows = cursor.fetchall()
+        return rows
     except mysql.connector.Error as e:
-        messagebox.showerror("Error", f"Hubo un problema al buscar el metodo de pago: {e}")
-        return None
+        messagebox.showerror("Error", f"Hubo un problema al buscar el método de pago: {e}")
+        return []
     finally:
         cursor.close()
         conexion.close()
+
 
 # Funciones para unidades
 def agregar_unidad(id_unidad, nombre, descripcion):
@@ -664,24 +690,28 @@ def actualizar_unidad(id_unidad_original, id_unidad, nombre, descripcion):
         cursor.close()
         conexion.close()
 
-def buscar_unidad(id_unidad):
+def buscar_unidad(criterio, valor):
     conexion = obtener_conexion()
     if not conexion:
-        return None
+        return []
     cursor = conexion.cursor()
-    query = """
-    SELECT id_unidad, nombre, descripcion
-    FROM unidades WHERE id_unidad = %s
-    """
-    valores = (id_unidad,)
+    query = ""
+    valores = ()
+    
+    if criterio == "id_unidad":
+        query = "SELECT id_unidad, nombre, descripcion FROM unidades WHERE id_unidad = %s"
+        valores = (valor,)
+    elif criterio == "nombre":
+        query = "SELECT id_unidad, nombre, descripcion FROM unidades WHERE nombre LIKE %s"
+        valores = (f"%{valor}%",)
+    
     try:
         cursor.execute(query, valores)
-        row = cursor.fetchone()
-        print(f"Resultado de busqueda para id_unidad {id_unidad}: {row}")
-        return row
+        rows = cursor.fetchall()
+        return rows
     except mysql.connector.Error as e:
         messagebox.showerror("Error", f"Hubo un problema al buscar la unidad: {e}")
-        return None
+        return []
     finally:
         cursor.close()
         conexion.close()
@@ -748,18 +778,38 @@ def eliminar_articulos(codigo):
         return
     
     cursor = conexion.cursor()
-    query = "DELETE FROM articulos WHERE codigo = %s"
-    valores = (codigo,)
     
     try:
-        cursor.execute(query, valores)
+        # Verificar si el artículo existe primero
+        query_check = "SELECT codigo FROM articulos WHERE codigo = %s"
+        cursor.execute(query_check, (codigo,))
+        if not cursor.fetchone():
+            messagebox.showwarning("No encontrado", f"El artículo con código {codigo} no existe en la base de datos.")
+            return
+
+        # Eliminar registros relacionados en la tabla ventas
+        query_ventas = "DELETE FROM ventas WHERE codigo_articulo = %s"
+        cursor.execute(query_ventas, (codigo,))
+
+        # Establecer a NULL las llaves foráneas antes de eliminar (si el esquema lo permite)
+        query_update = """
+        UPDATE articulos 
+        SET categoria_codigo = NULL, id_proveedor = NULL, id_unidad = NULL 
+        WHERE codigo = %s
+        """
+        cursor.execute(query_update, (codigo,))
+
+        # Eliminar el artículo
+        query_articulo = "DELETE FROM articulos WHERE codigo = %s"
+        cursor.execute(query_articulo, (codigo,))
+        
         conexion.commit()
         if cursor.rowcount > 0:
-            messagebox.showinfo("Éxito", "Artículo eliminado correctamente")
+            messagebox.showinfo("Éxito", f"Artículo con código {codigo} y ventas asociadas eliminados correctamente")
         else:
-            messagebox.showwarning("No encontrado", "No se encontró el artículo")
+            messagebox.showwarning("No encontrado", f"No se pudo eliminar el artículo con código {codigo}.")
     except mysql.connector.Error as err:
-        messagebox.showerror("Error", f"Hubo un problema al eliminar el artículo: {err}")
+        messagebox.showerror("Error", f"Error al eliminar el artículo: {err}")
     finally:
         cursor.close()
         conexion.close()
@@ -791,26 +841,28 @@ def actualizar_articulo(codigo, nombre, precio, costo, existencia, descripcion, 
         cursor.close()
         conexion.close()
 
-def buscar_articulo(codigo):
+def buscar_articulo(criterio, valor):
     conexion = obtener_conexion()
     if not conexion:
-        return None
-    
+        return []
     cursor = conexion.cursor()
-    query = """
-    SELECT codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad 
-    FROM articulos WHERE codigo = %s
-    """
-    valores = (codigo,)
+    query = ""
+    valores = ()
+    
+    if criterio == "codigo":
+        query = "SELECT codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad FROM articulos WHERE codigo = %s"
+        valores = (valor,)
+    elif criterio == "nombre":
+        query = "SELECT codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad FROM articulos WHERE nombre LIKE %s"
+        valores = (f"%{valor}%",)
     
     try:
         cursor.execute(query, valores)
-        row = cursor.fetchone()
-        print(f"Resultado de búsqueda para {codigo}: {row}")
-        return row
-    except mysql.connector.Error as err:
-        messagebox.showerror("Error", f"Hubo un problema al buscar el artículo: {err}")
-        return None
+        rows = cursor.fetchall()
+        return rows
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Hubo un problema al buscar el artículo: {e}")
+        return []
     finally:
         cursor.close()
         conexion.close()

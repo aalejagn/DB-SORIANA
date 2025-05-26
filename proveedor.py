@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox,Scrollbar
+from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox, Scrollbar, StringVar
 from db_soriana import agregar_proveedor, eliminar_proveedor, actualizar_proveedor, ver_proveedor, buscar_proveedor
 
 def interfaz_proveedor():
@@ -32,7 +32,10 @@ def crear_seccion_proveedor(ventana, barra_lateral):
 
     frame_search = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_search.pack(fill="x", pady=5)
-    Label(frame_search, text="Buscar por ID Proveedor:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    Label(frame_search, text="Buscar por:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    criterio_var = StringVar(value="ID Proveedor")
+    combo_busqueda = ttk.Combobox(frame_search, textvariable=criterio_var, values=["ID Proveedor", "Nombre", "Teléfono"], font=("Arial", 12), state="readonly", width=12)
+    combo_busqueda.pack(side="left", padx=(0, 5))
     entry_busqueda = Entry(frame_search, font=("Arial", 12), width=20)
     entry_busqueda.pack(side="left", padx=(0, 10))
 
@@ -46,27 +49,24 @@ def crear_seccion_proveedor(ventana, barra_lateral):
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-        #TODO: Creamos un frame para la tabla y el scrollbar
     frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
-    frame_tabla.pack(padx=10,fill="both", expand=True)
+    frame_tabla.pack(padx=10, fill="both", expand=True)
 
-    #TODO: Creamos el scrollbar vertical
     scrollbar = Scrollbar(frame_tabla, orient="vertical")
-    scrollbar1 = Scrollbar(frame_tabla,orient="horizontal")
+    scrollbar1 = Scrollbar(frame_tabla, orient="horizontal")
     scrollbar.pack(side="right", fill="y")
     scrollbar1.pack(side="bottom", fill="x")
-    # Treeview table
-    # TODO: Creamos la tabla (Treeview) y la asociamos a los scrollbars     
+
     tabla = ttk.Treeview(frame_tabla, columns=campos, show="headings", height=15, 
-                     yscrollcommand=scrollbar.set, xscrollcommand=scrollbar1.set)
+                         yscrollcommand=scrollbar.set, xscrollcommand=scrollbar1.set)
     for col in campos:
         tabla.heading(col, text=col)
         tabla.column(col, width=100)
     tabla.pack(pady=10, fill="both", expand=True)
 
-    #TODO: Configuramos el scrollbar para que controle el desplzamineot vertical de la tabla
     scrollbar.config(command=tabla.yview)
     scrollbar1.config(command=tabla.xview)
+
     id_proveedor_original_var = [None]
 
     def on_select(event):
@@ -81,28 +81,38 @@ def crear_seccion_proveedor(ventana, barra_lateral):
     tabla.bind('<<TreeviewSelect>>', on_select)
 
     def buscar_y_mostrar():
-        id_proveedor = entry_busqueda.get().strip()
-        if not id_proveedor:
+        criterio = criterio_var.get().lower()
+        valor = entry_busqueda.get().strip()
+        if not valor:
             ver_proveedor(tabla)
             for entrada in entradas.values():
                 entrada.delete(0, 'end')
             id_proveedor_original_var[0] = None
+            entry_busqueda.focus_set()
             return
 
-        resultado = buscar_proveedor(id_proveedor)
+        criterio_map = {"id proveedor": "id_proveedor", "nombre": "nombre", "teléfono": "telefono"}
+        resultados = buscar_proveedor(criterio_map[criterio], valor)
+
         for row in tabla.get_children():
             tabla.delete(row)
         for entrada in entradas.values():
             entrada.delete(0, 'end')
         id_proveedor_original_var[0] = None
 
-        if resultado:
-            tabla.insert("", "end", values=resultado)
-            for i, campo in enumerate(campos):
-                entradas[campo].insert(0, resultado[i])
-            id_proveedor_original_var[0] = resultado[0]
-        else:
-            messagebox.showwarning("No encontrado", f"No se encontró un proveedor con el ID {id_proveedor}")
+        if not resultados:
+            messagebox.showwarning("No encontrado", f"No se encontró un proveedor con {criterio.replace('id proveedor', 'ID Proveedor')} '{valor}'")
+            entry_busqueda.focus_set()
+            return
+
+        resultado = resultados[0]  # Toma el primer resultado
+        tabla.insert("", "end", values=resultado)
+        for i, campo in enumerate(campos):
+            entradas[campo].insert(0, resultado[i])
+        id_proveedor_original_var[0] = resultado[0]  # ID Proveedor está en índice 0
+        entry_busqueda.focus_set()
+
+    entry_busqueda.bind('<Return>', lambda event: buscar_y_mostrar())
 
     Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
            command=buscar_y_mostrar).pack(side="left", pady=5, padx=5)

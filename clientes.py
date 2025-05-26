@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox, Scrollbar
+from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox, Scrollbar, StringVar
 from db_soriana import agregar_cliente, eliminar_cliente, actualizar_cliente, ver_clientes, buscar_cliente
 
 def interfaz_clientes():
@@ -39,9 +39,20 @@ def crear_seccion_clientes(ventana, barra_lateral):
     # Frame para búsqueda
     frame_search = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_search.pack(fill="x", pady=5)
-    Label(frame_search, text="Buscar por Teléfono:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    Label(frame_search, text="Buscar por:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    criterio_var = StringVar(value="Teléfono")
+    combo_busqueda = ttk.Combobox(frame_search, textvariable=criterio_var, values=["Teléfono", "Nombre"], font=("Arial", 12), state="readonly", width=10)
+    combo_busqueda.pack(side="left", padx=(0, 5))
     entry_busqueda = Entry(frame_search, font=("Arial", 12), width=20)
     entry_busqueda.pack(side="left", padx=(0, 10))
+
+    # Botón de búsqueda
+    Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
+           command=lambda: buscar_y_mostrar()).pack(side="left", pady=5, padx=5)
+
+    # Vincular la tecla Enter
+    entry_busqueda.bind('<Return>', lambda event: buscar_y_mostrar())
+    entry_busqueda.focus_set()
 
     # Frame para los campos de entrada
     frame_entradas = Frame(frame_izquierdo, bg="#E6F0FA")
@@ -55,25 +66,24 @@ def crear_seccion_clientes(ventana, barra_lateral):
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-        #TODO: Creamos un frame para la tabla y el scrollbar
+    # Frame para la tabla y los scrollbars
     frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
-    frame_tabla.pack(padx=10,fill="both", expand=True)
+    frame_tabla.pack(padx=10, fill="both", expand=True)
 
-    #TODO: Creamos el scrollbar vertical
+    # Scrollbars
     scrollbar = Scrollbar(frame_tabla, orient="vertical")
-    scrollbar1 = Scrollbar(frame_tabla,orient="horizontal")
+    scrollbar1 = Scrollbar(frame_tabla, orient="horizontal")
     scrollbar.pack(side="right", fill="y")
     scrollbar1.pack(side="bottom", fill="x")
+
     # Treeview table
-    # TODO: Creamos la tabla (Treeview) y la asociamos a los scrollbars     
     tabla = ttk.Treeview(frame_tabla, columns=campos, show="headings", height=15, 
-                     yscrollcommand=scrollbar.set, xscrollcommand=scrollbar1.set)
+                         yscrollcommand=scrollbar.set, xscrollcommand=scrollbar1.set)
     for col in campos:
         tabla.heading(col, text=col)
         tabla.column(col, width=100)
     tabla.pack(pady=10, fill="both", expand=True)
 
-    #TODO: Configuramos el scrollbar para que controle el desplzamineot vertical de la tabla
     scrollbar.config(command=tabla.yview)
     scrollbar1.config(command=tabla.xview)
 
@@ -94,37 +104,48 @@ def crear_seccion_clientes(ventana, barra_lateral):
 
     # Función para buscar y mostrar resultados
     def buscar_y_mostrar():
-        telefono = entry_busqueda.get().strip()
-        if not telefono:
-            # Si el campo está vacío, mostramos todos los clientes
+        criterio = criterio_var.get().lower()  # Obtener el criterio del Combobox
+        valor = entry_busqueda.get().strip()
+        if not valor:
             ver_clientes(tabla)
             for entrada in entradas.values():
-                entrada.delete(0, 'end')  # Limpiar campos
+                entrada.delete(0, 'end')
             telefono_original_var[0] = None
+            entry_busqueda.focus_set()
             return
 
-        resultado = buscar_cliente(telefono)
-        # Limpiar la tabla
+        # Mapear el criterio de la interfaz a los valores esperados por buscar_cliente
+        criterio_map = {"teléfono": "telefono", "nombre": "nombre"}
+        try:
+            criterio_db = criterio_map[criterio]
+        except KeyError:
+            messagebox.showerror("Error", "Criterio de búsqueda no válido")
+            return
+
+        resultados = buscar_cliente(criterio_db, valor)
+
+        # Limpiar la tabla y los campos
         for row in tabla.get_children():
             tabla.delete(row)
-        # Limpiar los campos de entrada
         for entrada in entradas.values():
             entrada.delete(0, 'end')
         telefono_original_var[0] = None
 
-        if resultado:
-            # Insertar el resultado en la tabla
-            tabla.insert("", "end", values=resultado)
-            # Llenar los campos de entrada con los datos encontrados
-            for i, campo in enumerate(campos):
-                entradas[campo].insert(0, resultado[i])
-            telefono_original_var[0] = resultado[2]  # Guardar teléfono original
-        else:
-            messagebox.showwarning("No encontrado", f"No se encontró un cliente con el teléfono {telefono}")
+        if not resultados:
+            messagebox.showwarning("No encontrado", f"No se encontró un cliente con {criterio} '{valor}'")
+            entry_busqueda.focus_set()
+            return
 
-    # Botón de búsqueda
-    Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
-           command=buscar_y_mostrar).pack(side="left", pady=5, padx=5)
+        # Insertar todos los resultados en la tabla
+        for resultado in resultados:
+            tabla.insert("", "end", values=resultado)
+
+        # Cargar el primer resultado en los campos de entrada
+        resultado = resultados[0]  # Tomar el primer resultado para los campos
+        for i, campo in enumerate(campos):
+            entradas[campo].insert(0, resultado[i])
+        telefono_original_var[0] = resultado[2]  # Teléfono está en índice 2
+        entry_busqueda.focus_set()
 
     def agregar():
         nombre = entradas["Nombre:"].get().strip()
@@ -134,8 +155,8 @@ def crear_seccion_clientes(ventana, barra_lateral):
         rfc = entradas["RFC:"].get().strip()
         correo = entradas["Correo:"].get().strip()
 
-        if not all([nombre, apellidos, telefono, direccion,correo]):
-            messagebox.showerror("Error", "Todos los campos excepto rfc son obligatorios")
+        if not all([nombre, apellidos, telefono, direccion, correo]):
+            messagebox.showerror("Error", "Todos los campos excepto RFC son obligatorios")
             return
 
         agregar_cliente(nombre, apellidos, telefono, direccion, rfc, correo)
@@ -166,7 +187,7 @@ def crear_seccion_clientes(ventana, barra_lateral):
         correo = entradas["Correo:"].get().strip()
 
         if not all([nombre, apellidos, telefono, direccion, correo]):
-            messagebox.showerror("Error", "Todos los campos excepto rfc son obligatorios")
+            messagebox.showerror("Error", "Todos los campos excepto RFC son obligatorios")
             return
 
         if not telefono_original_var[0]:

@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox,Scrollbar
+from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox, Toplevel, Scrollbar, StringVar
 from db_soriana import agregar_catalogo, eliminar_catalogo, actualizar_catalogo, ver_catalogo, buscar_catalogo
 
 def interfaz_categorias():
@@ -32,7 +32,10 @@ def crear_seccion_categorias(ventana, barra_lateral):
 
     frame_search = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_search.pack(fill="x", pady=5)
-    Label(frame_search, text="Buscar por Código:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    Label(frame_search, text="Buscar por:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    criterio_var = StringVar(value="Código")
+    combo_busqueda = ttk.Combobox(frame_search, textvariable=criterio_var, values=["Código", "Nombre"], font=("Arial", 12), state="readonly", width=10)
+    combo_busqueda.pack(side="left", padx=(0, 5))
     entry_busqueda = Entry(frame_search, font=("Arial", 12), width=20)
     entry_busqueda.pack(side="left", padx=(0, 10))
 
@@ -46,26 +49,21 @@ def crear_seccion_categorias(ventana, barra_lateral):
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-
-        #TODO: Creamos un frame para la tabla y el scrollbar
     frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
-    frame_tabla.pack(padx=10,fill="both", expand=True)
+    frame_tabla.pack(padx=10, fill="both", expand=True)
 
-    #TODO: Creamos el scrollbar vertical
     scrollbar = Scrollbar(frame_tabla, orient="vertical")
-    scrollbar1 = Scrollbar(frame_tabla,orient="horizontal")
+    scrollbar1 = Scrollbar(frame_tabla, orient="horizontal")
     scrollbar.pack(side="right", fill="y")
     scrollbar1.pack(side="bottom", fill="x")
-    # Treeview table
-    # TODO: Creamos la tabla (Treeview) y la asociamos a los scrollbars     
+
     tabla = ttk.Treeview(frame_tabla, columns=campos, show="headings", height=15, 
-                     yscrollcommand=scrollbar.set, xscrollcommand=scrollbar1.set)
+                         yscrollcommand=scrollbar.set, xscrollcommand=scrollbar1.set)
     for col in campos:
         tabla.heading(col, text=col)
         tabla.column(col, width=100)
     tabla.pack(pady=10, fill="both", expand=True)
 
-    #TODO: Configuramos el scrollbar para que controle el desplzamineot vertical de la tabla
     scrollbar.config(command=tabla.yview)
     scrollbar1.config(command=tabla.xview)
     
@@ -83,28 +81,38 @@ def crear_seccion_categorias(ventana, barra_lateral):
     tabla.bind('<<TreeviewSelect>>', on_select)
 
     def buscar_y_mostrar():
-        codigo = entry_busqueda.get().strip()
-        if not codigo:
+        criterio = criterio_var.get().lower()
+        valor = entry_busqueda.get().strip()
+        if not valor:
             ver_catalogo(tabla)
             for entrada in entradas.values():
                 entrada.delete(0, 'end')
             codigo_original_var[0] = None
+            entry_busqueda.focus_set()
             return
 
-        resultado = buscar_catalogo(codigo)
+        criterio_map = {"código": "codigo", "nombre": "nombre"}
+        resultados = buscar_catalogo(criterio_map[criterio], valor)
+
         for row in tabla.get_children():
             tabla.delete(row)
         for entrada in entradas.values():
             entrada.delete(0, 'end')
         codigo_original_var[0] = None
 
-        if resultado:
-            tabla.insert("", "end", values=resultado)
-            for i, campo in enumerate(campos):
-                entradas[campo].insert(0, resultado[i])
-            codigo_original_var[0] = resultado[0]
-        else:
-            messagebox.showwarning("No encontrado", f"No se encontró una categoría con el código {codigo}")
+        if not resultados:
+            messagebox.showwarning("No encontrado", f"No se encontró una categoría con {criterio} '{valor}'")
+            entry_busqueda.focus_set()
+            return
+
+        resultado = resultados[0]  # Toma el primer resultado
+        tabla.insert("", "end", values=resultado)
+        for i, campo in enumerate(campos):
+            entradas[campo].insert(0, resultado[i])
+        codigo_original_var[0] = resultado[0]
+        entry_busqueda.focus_set()
+
+    entry_busqueda.bind('<Return>', lambda event: buscar_y_mostrar())
 
     Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
            command=buscar_y_mostrar).pack(side="left", pady=5, padx=5)

@@ -5,12 +5,11 @@ from datetime import datetime
 def interfaz_articulos():
     ventana = Tk()
     ventana.title("Gestión de Artículos")
-    ventana.geometry("1000x600")  # Increased width to accommodate more columns
+    ventana.geometry("1000x600")
     crear_seccion_articulos(ventana, None).pack(expand=True, fill="both")
     ventana.mainloop()
 
 def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
-    # Define fields based on articulos table schema
     campos = ["Código:", "Nombre:", "Precio:", "Costo:", "Existencia:", "Descripción:", 
               "Fecha Caducidad:", "Código Categoría:", "ID Proveedor:", "ID Unidad:"]
 
@@ -33,8 +32,6 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
 
     Label(frame_izquierdo, text="Artículos", font=("Arial", 16, "bold"), bg="#E6F0FA").pack(pady=10)
 
-    # Search frame
-    # Añadimos un Combobox para seleccionar criterio de búsqueda (Código o Nombre)
     frame_search = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_search.pack(fill="x", pady=5)
     Label(frame_search, text="Buscar por:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
@@ -44,49 +41,39 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
     entry_busqueda = Entry(frame_search, font=("Arial", 12), width=20)
     entry_busqueda.pack(side="left", padx=(0, 10))
 
-    # Entries frame, split into two columns
     frame_entradas = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_entradas.pack(fill="x", pady=5)
 
-    # Left column (first 5 fields)
     frame_entradas_izq = Frame(frame_entradas, bg="#E6F0FA")
     frame_entradas_izq.pack(side="left", padx=10)
 
-    # Right column (remaining fields)
     frame_entradas_der = Frame(frame_entradas, bg="#E6F0FA")
     frame_entradas_der.pack(side="left", padx=10)
 
     entradas = {}
-    # Left column entries
     for i, campo in enumerate(campos[:5]):
         Label(frame_entradas_izq, text=campo, bg="#E6F0FA", font=("Arial", 12)).grid(row=i, column=0, padx=(10, 2), pady=5, sticky="e")
         entrada = Entry(frame_entradas_izq, font=("Arial", 12))
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-    # Right column entries
     for i, campo in enumerate(campos[5:]):
         Label(frame_entradas_der, text=campo, bg="#E6F0FA", font=("Arial", 12)).grid(row=i, column=0, padx=(10, 2), pady=5, sticky="e")
         entrada = Entry(frame_entradas_der, font=("Arial", 12))
         entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
-    # Prellenamos el código si viene desde ventas
     if codigo_prellenado:
         entradas["Código:"].insert(0, codigo_prellenado)
 
-    #TODO: Creamos un frame para la tabla y el scrollbar
     frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_tabla.pack(padx=10, fill="both", expand=True)
 
-    #TODO: Creamos el scrollbar vertical
     scrollbar = Scrollbar(frame_tabla, orient="vertical")
     scrollbar1 = Scrollbar(frame_tabla, orient="horizontal")
     scrollbar.pack(side="right", fill="y")
     scrollbar1.pack(side="bottom", fill="x")
 
-    # Treeview table
-    # TODO: Creamos la tabla (Treeview) y la asociamos a los scrollbars     
     tabla = ttk.Treeview(frame_tabla, columns=campos, show="headings", height=15, 
                          yscrollcommand=scrollbar.set, xscrollcommand=scrollbar1.set)
     for col in campos:
@@ -94,10 +81,9 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
         tabla.column(col, width=100)
     tabla.pack(pady=10, fill="both", expand=True)
 
-    #TODO: Configuramos el scrollbar para que controle el desplzamineot vertical de la tabla
     scrollbar.config(command=tabla.yview)
     scrollbar1.config(command=tabla.xview)
-    codigo_original_var = [None]  # Store original codigo for updates
+    codigo_original_var = [None]
 
     def on_select(event):
         select_item = tabla.selection()
@@ -110,7 +96,6 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
 
     tabla.bind('<<TreeviewSelect>>', on_select)
 
-    # TODO: Agregar validación de fecha para formato YYYY-MM-DD
     def validate_date(date_str):
         try:
             datetime.strptime(date_str, '%Y-%m-%d')
@@ -119,7 +104,6 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             return False
 
     def buscar_y_mostrar(event=None, combo_busqueda=None):
-        # Maneja la búsqueda por código o nombre según el Combobox
         criterio = combo_busqueda.get() if combo_busqueda else "Código"
         valor = entry_busqueda.get().strip()
         if not valor:
@@ -136,20 +120,23 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             entrada.delete(0, 'end')
         codigo_original_var[0] = None
 
+        # Mapear el criterio de la interfaz a los valores esperados por buscar_articulo
+        criterio_db = "codigo" if criterio == "Código" else "nombre"
+
         if criterio == "Código":
-            resultado = buscar_articulo(valor)
+            resultado = buscar_articulo(criterio_db, valor)  # Pasar ambos argumentos
             if resultado:
-                tabla.insert("", "end", values=resultado)
+                tabla.insert("", "end", values=resultado[0])  # Usar resultado[0] para un solo registro
                 for i, campo in enumerate(campos):
-                    entradas[campo].insert(0, resultado[i])
-                codigo_original_var[0] = resultado[0]
+                    entradas[campo].insert(0, resultado[0][i])
+                codigo_original_var[0] = resultado[0][0]
             else:
                 response = messagebox.askyesno("No encontrado", f"No se encontró un artículo con el código {valor}. ¿Desea agregarlo?")
                 if response:
                     entradas["Código:"].insert(0, valor)
                     entry_busqueda.delete(0, 'end')
         elif criterio == "Nombre":
-            resultados = buscar_articulo_por_nombre(valor)
+            resultados = buscar_articulo(criterio_db, valor)  # Pasar ambos argumentos
             if resultados:
                 for resultado in resultados:
                     tabla.insert("", "end", values=resultado)
@@ -158,16 +145,7 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
                 codigo_original_var[0] = resultados[0][0]
             else:
                 messagebox.showwarning("No encontrado", f"No se encontró un artículo con el nombre {valor}")
-        #TODO: Agregar sonido para confirmar escaneo exitoso
         entry_busqueda.focus_set()
-
-    # TODO: Vincular ENTER al campo de busqueda
-    entry_busqueda.bind('<Return>', lambda event: buscar_y_mostrar(event, combo_busqueda))
-    # TODO: Poner el foco en el campo de busqueda
-    entry_busqueda.focus_set()
-
-    Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
-           command=lambda: buscar_y_mostrar(None, combo_busqueda)).pack(side="left", pady=5, padx=5)
 
     def agregar():
         codigo = entradas["Código:"].get().strip()
@@ -185,7 +163,6 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             messagebox.showerror("Error", "Todos los campos son obligatorios")
             return
 
-        # TODO: Validar formato de fecha antes de agregar
         if not validate_date(fecha_caducidad):
             messagebox.showerror("Error", "Fecha de caducidad debe estar en formato YYYY-MM-DD")
             return
@@ -196,11 +173,9 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             existencia = int(existencia)
             id_proveedor = int(id_proveedor)
             id_unidad = int(id_unidad)
-            # Validamos que la existencia no sea negativa
             if existencia < 0:
                 messagebox.showerror("Error", "La existencia no puede ser negativa")
                 return
-            # TODO: Validar claaves foranesa
             if not (buscar_catalogo(categoria_codigo) and buscar_proveedor(id_proveedor) and buscar_unidad(id_unidad)):
                 messagebox.showerror("Error", "Código de categoría, ID de proveedor o ID de unidad no válidos")
                 return
@@ -211,24 +186,27 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
         agregar_articulo(codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad)
         ver_articulos(tabla)
         limpiar_campos()
-        # Regresamos a la sección de ventas si venimos desde allí
         if codigo_prellenado:
             from ventas import crear_seccion_ventas
             for widget in ventana.winfo_children():
                 if widget != barra_lateral:
                     widget.destroy()
-            crear_seccion_ventas(ventana, barra_lateral, None)  # Ajustar 'None' si se usa 'usuario'
+            crear_seccion_ventas(ventana, barra_lateral, None)
 
     def eliminar():
         codigo = entradas["Código:"].get().strip()
         if not codigo:
             messagebox.showerror("Error", "El campo Código es obligatorio")
             return
-        eliminar_articulos(codigo)
-        ver_articulos(tabla)
-        limpiar_campos()
+        response = messagebox.askyesno("Confirmar", f"¿Está seguro de eliminar el artículo con código {codigo}? Esto también eliminará las ventas asociadas.")
+        if response:
+            try:
+                eliminar_articulos(codigo)
+                ver_articulos(tabla)
+                limpiar_campos()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo eliminar el artículo: {e}")
 
-    # TODO: Actualializar datos
     def actualizar_datos():
         codigo = entradas["Código:"].get().strip()
         nombre = entradas["Nombre:"].get().strip()
@@ -249,7 +227,6 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             messagebox.showerror("Error", "Seleccione un artículo para actualizar")
             return
 
-        # TODO: Validar formato de fecha antes de actualizar
         if not validate_date(fecha_caducidad):
             messagebox.showerror("Error", "Fecha de caducidad debe estar en formato YYYY-MM-DD")
             return
@@ -260,11 +237,9 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             existencia = int(existencia)
             id_proveedor = int(id_proveedor)
             id_unidad = int(id_unidad)
-            # Validamos que la existencia no sea negativa
             if existencia < 0:
                 messagebox.showerror("Error", "La existencia no puede ser negativa")
                 return
-            # TODO: Validar claves foráneas antes de actualizar
             if not (buscar_catalogo(categoria_codigo) and buscar_proveedor(id_proveedor) and buscar_unidad(id_unidad)):
                 messagebox.showerror("Error", "Código de categoría, ID de proveedor o ID de unidad no válidos")
                 return
@@ -273,7 +248,7 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             return
 
         actualizar_articulo(
-            codigo_original_var[0],  # Usar código original para WHERE
+            codigo_original_var[0],
             nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad
         )
         ver_articulos(tabla)
@@ -284,10 +259,8 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             entrada.delete(0, 'end')
         entry_busqueda.delete(0, 'end')
         codigo_original_var[0] = None
-        # Regresamos el foco al campo de búsqueda
         entry_busqueda.focus_set()
 
-    # Buttons for actions
     Button(frame_derecho, text="Agregar", font=("Arial", 10), bg="#4CAF50", fg="white", width=15,
            command=agregar).pack(pady=5)
     Button(frame_derecho, text="Eliminar", font=("Arial", 10), bg="#F44336", fg="white", width=15,
@@ -296,9 +269,10 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
            command=actualizar_datos).pack(pady=5)
     Button(frame_derecho, text="Limpiar", font=("Arial", 10), bg="#FFC107", fg="black", width=15,
            command=limpiar_campos).pack(pady=5)
+    Button(frame_search, text="Buscar", font=("Arial", 10), bg="#2196F3", fg="white",
+       command=lambda: buscar_y_mostrar(None, combo_busqueda)).pack(side="left", pady=5, padx=5)
 
     ver_articulos(tabla)
-    # TODO: Poner el foco en el campo de busqueda
     entry_busqueda.focus_set()
 
     return frame_principal
