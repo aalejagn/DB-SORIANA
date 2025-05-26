@@ -6,10 +6,10 @@ from categorias import crear_seccion_categorias
 from metodo_de_pago import crear_seccion_metodo_de_pago
 from empleados import crear_seccion_empleados
 from articulos import crear_seccion_articulos
+from ventas import crear_seccion_ventas
 from configuracion_interfaz import crear_seccion_configuracion
 from configuracion import Configuracion
 from PIL import Image, ImageTk
-
 
 """
 Función de creación de ventana
@@ -32,7 +32,7 @@ def ventana_login(ventana, actualizar=False):
     marco_sombra = Frame(ventana, bg="#87CEEB")
     marco_sombra.pack(expand=True, fill="both")
 
-    # Optional: Use PIL for .jpg or other formats (uncomment and install Pillow if needed)
+    # Usamos PIL para cargar la imagen de fondo en formato PNG
     try:
         img = Image.open("logos/Soriana.png")
         img = img.resize((1300, 800), Image.Resampling.LANCZOS)
@@ -106,11 +106,13 @@ def barra_lateral(ventana, usuario):
     tipo_usuario = "Gerente" if usuario.lower() == "gerente" else "Trabajador"
     Label(frame_superior, text=f"👤 {tipo_usuario}", font=("Helvetica", 16, "bold"), bg="#1E88E5", fg="white").pack()
 
-    opciones = ["Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago", "Articulos"]
+    # Añadimos la opción de Ventas al menú
+    opciones = ["Ventas", "Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago", "Articulos"]
     if tipo_usuario == "Gerente":
         opciones.extend(["Empleado", "Configuración"])
 
     funciones = {
+        "Ventas": lambda: crear_seccion_ventas(ventana, barra_lateral, usuario),
         "Clientes": lambda: manejo_clientes(ventana, tipo_usuario, barra_lateral),
         "Proveedor": lambda: crear_seccion_proveedor(ventana, barra_lateral),
         "Unidades": lambda: crear_seccion_unidades(ventana, barra_lateral),
@@ -138,14 +140,15 @@ def barra_lateral(ventana, usuario):
     title_frame = Frame(main_frame, bg="#E6F0FA")
     title_frame.pack(pady=20)
 
-    # Add image (place logo.png in an 'images' folder in the same directory as this script)
+    # Corregimos el manejo de la imagen para usar PIL en lugar de PhotoImage
     try:
-        logo_image = PhotoImage(file="logos/log.png")
+        logo_img = Image.open("logos/log.png")
+        logo_img = logo_img.resize((200, 100), Image.Resampling.LANCZOS)
+        logo_image = ImageTk.PhotoImage(logo_img)
         Label(title_frame, image=logo_image, bg="#E6F0FA").pack(pady=10)
-        # Keep a reference to prevent garbage collection
         title_frame.logo_image = logo_image
     except Exception as e:
-        Label(title_frame, text="No se pudo cargar la imagenA", font=("Helvetica", 12), bg="#E6F0FA", fg="#F44336").pack(pady=10)
+        Label(title_frame, text="No se pudo cargar la imagen", font=("Helvetica", 12), bg="#E6F0FA", fg="#F44336").pack(pady=10)
 
     # Add a black separator line between the image and labels
     separator = ttk.Separator(title_frame, orient='horizontal')

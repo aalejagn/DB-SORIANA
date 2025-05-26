@@ -840,6 +840,65 @@ def inicializar_usuarios():
         cursor.close()
 
         conexion.close()
+
+def agregar_venta(id_venta, telefono, id_metodo, total, fecha, id_empleado):
+    conexion = obtener_conexion()
+    if not conexion:
+        return
+    cursor = conexion.cursor()
+    query = """
+    INSERT INTO ventas (id_venta, telefono, id_metodo, total, fecha, id_empleado)
+    VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    valores = (id_venta, telefono, id_metodo, total, fecha, id_empleado)
+    try:
+        cursor.execute(query, valores)
+        conexion.commit()
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error", f"Error al registrar venta: {err}")
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def actualizar_stock(codigo, cantidad):
+    conexion = obtener_conexion()
+    if not conexion:
+        return
+    cursor = conexion.cursor()
+    query = "UPDATE articulos SET existencia = existencia - %s WHERE codigo = %s"
+    valores = (cantidad, codigo)
+    try:
+        cursor.execute(query, valores)
+        conexion.commit()
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error", f"Error al actualizar stock: {err}")
+    finally:
+        cursor.close()
+        conexion.close()
+
+def buscar_articulo_por_nombre(nombre):
+    conexion = obtener_conexion()
+    if not conexion:
+        return []
+    cursor = conexion.cursor()
+    query = """
+    SELECT codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad 
+    FROM articulos WHERE nombre LIKE %s
+    """
+    valores = (f"%{nombre}%",)
+    try:
+        cursor.execute(query, valores)
+        rows = cursor.fetchall()
+        return rows
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error", f"Error al buscar artículo por nombre: {err}")
+        return []
+    finally:
+        cursor.close()
+        conexion.close()
+
+
 def registrar_venta(codigo_articulo):
     conexion = obtener_conexion()
     if not conexion:
