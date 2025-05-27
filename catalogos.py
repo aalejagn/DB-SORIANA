@@ -1,5 +1,4 @@
-from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox
-from PIL import Image, ImageTk
+from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox, PhotoImage
 from clientes import crear_seccion_clientes
 from proveedor import crear_seccion_proveedor
 from unidades import crear_seccion_unidades
@@ -9,9 +8,14 @@ from empleados import crear_seccion_empleados
 from articulos import crear_seccion_articulos
 from ventas import crear_seccion_ventas
 from configuracion_interfaz import crear_seccion_configuracion
+from corte_caja import crear_seccion_corte_de_caja
+from historia_venta import crear_seccion_historia_venta
 from configuracion import Configuracion
+from PIL import Image, ImageTk
 
-# todo: Función para crear la ventana principal de la aplicación
+"""
+Función de creación de ventana
+"""
 def creacion_ventana():
     ventana = Tk()
     ventana.title("Punto de venta - Soriana")
@@ -19,7 +23,9 @@ def creacion_ventana():
     ventana.configure(bg="#E6F0FA")
     return ventana
 
-# todo: Función para crear la ventana de login con selección de usuario y contraseña
+"""
+Creación de presentación de usuarios registrados
+"""
 def ventana_login(ventana, actualizar=False):
     if actualizar:
         for widget in ventana.winfo_children():
@@ -28,7 +34,7 @@ def ventana_login(ventana, actualizar=False):
     marco_sombra = Frame(ventana, bg="#87CEEB")
     marco_sombra.pack(expand=True, fill="both")
 
-    # todo: Cargar la imagen de fondo para el login
+    # Usamos PIL para cargar la imagen de fondo en formato PNG
     try:
         img = Image.open("logos/Soriana.png")
         img = img.resize((1300, 800), Image.Resampling.LANCZOS)
@@ -75,7 +81,9 @@ def ventana_login(ventana, actualizar=False):
            relief="flat", activebackground="#388E3C")\
         .grid(row=5, column=0, columnspan=3, pady=25)
 
-# todo: Función para validar las credenciales del usuario
+"""
+Creamos la función de validar datos para usuarios
+"""
 def validar_usuarios(usuario, contraseña, ventana, marco_sombra):
     if not usuario:
         messagebox.showerror("Error", "Por favor, seleccione un usuario")
@@ -87,7 +95,9 @@ def validar_usuarios(usuario, contraseña, ventana, marco_sombra):
     else:
         messagebox.showerror("Error", "Usuario o contraseña incorrectos")
 
-# todo: Función para crear la barra lateral con opciones según el tipo de usuario
+"""
+Creación de lado lateral para los botones
+"""
 def barra_lateral(ventana, usuario):
     barra_lateral = Frame(ventana, bg="#1E88E5", width=250)
     barra_lateral.pack(side="left", fill="y")
@@ -95,34 +105,27 @@ def barra_lateral(ventana, usuario):
     frame_superior = Frame(barra_lateral, bg="#1E88E5")
     frame_superior.pack(fill="x", pady=15, padx=15)
     
-    # todo: Determinar el tipo de usuario según el nombre
-    if usuario.lower() == "gerente":
-        tipo_usuario = "Gerente"
-    elif usuario.lower().startswith("cajero"):
-        tipo_usuario = "Cajero"
-    else:
-        tipo_usuario = "Trabajador"
-    
+    tipo_usuario = "Gerente" if usuario.lower() == "gerente" else "Trabajador"
     Label(frame_superior, text=f"👤 {tipo_usuario}", font=("Helvetica", 16, "bold"), bg="#1E88E5", fg="white").pack()
 
-    # todo: Restringir opciones para cajeros, solo mostrar "Ventas"
-    if tipo_usuario == "Cajero":
-        opciones = ["Ventas"]
-    else:
-        opciones = ["Ventas", "Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago", "Articulos"]
-        if tipo_usuario == "Gerente":
-            opciones.extend(["Empleado", "Configuración"])
+    # Definimos opciones según el tipo de usuario
+    if tipo_usuario == "Trabajador":
+        opciones = ["Ventas", "Historial de Ventas"]
+    else:  # Gerente
+        opciones = ["Ventas", "Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago", "Articulos", "Historial de Ventas", "Corte de Caja", "Empleado", "Configuración"]
 
     funciones = {
         "Ventas": lambda: crear_seccion_ventas(ventana, barra_lateral, usuario),
         "Clientes": lambda: manejo_clientes(ventana, tipo_usuario, barra_lateral),
-        "Proveedor": lambda: crear_seccion_proveedor(ventana, barra_lateral, usuario),
-        "Unidades": lambda: crear_seccion_unidades(ventana, barra_lateral, usuario),
-        "Categorias": lambda: crear_seccion_categorias(ventana, barra_lateral, usuario),
-        "Metodo de pago": lambda: crear_seccion_metodo_de_pago(ventana, barra_lateral, usuario),
+        "Proveedor": lambda: crear_seccion_proveedor(ventana, barra_lateral),
+        "Unidades": lambda: crear_seccion_unidades(ventana, barra_lateral),
+        "Categorias": lambda: crear_seccion_categorias(ventana, barra_lateral),
+        "Metodo de pago": lambda: crear_seccion_metodo_de_pago(ventana, barra_lateral),
+        "Articulos": lambda: crear_seccion_articulos(ventana, barra_lateral),
+        "Historial de Ventas": lambda: manejo_historia_venta(ventana, tipo_usuario, barra_lateral),
+        "Corte de Caja": lambda: crear_seccion_corte_de_caja(ventana, barra_lateral),
         "Empleado": lambda: manejo_empleados(ventana, tipo_usuario, barra_lateral),
-        "Configuración": lambda: manejo_configuracion(ventana, tipo_usuario, barra_lateral),
-        "Articulos": lambda: crear_seccion_articulos(ventana, barra_lateral, usuario)
+        "Configuración": lambda: manejo_configuracion(ventana, tipo_usuario, barra_lateral)
     }
     
     for opcion in opciones:
@@ -142,7 +145,7 @@ def barra_lateral(ventana, usuario):
     title_frame = Frame(main_frame, bg="#E6F0FA")
     title_frame.pack(pady=20)
 
-    # todo: Cargar el logo en la pantalla principal
+    # Corregimos el manejo de la imagen para usar PIL en lugar de PhotoImage
     try:
         logo_img = Image.open("logos/log.png")
         logo_img = logo_img.resize((200, 100), Image.Resampling.LANCZOS)
@@ -152,6 +155,7 @@ def barra_lateral(ventana, usuario):
     except Exception as e:
         Label(title_frame, text="No se pudo cargar la imagen", font=("Helvetica", 12), bg="#E6F0FA", fg="#F44336").pack(pady=10)
 
+    # Add a black separator line between the image and labels
     separator = ttk.Separator(title_frame, orient='horizontal')
     separator.pack(fill="x", expand=True, pady=10)
     style = ttk.Style()
@@ -180,13 +184,17 @@ def barra_lateral(ventana, usuario):
            relief="flat", activebackground="#0D47A1", activeforeground="white", bd=0, padx=10, pady=5)\
         .pack(pady=40)
 
-# todo: Función para cerrar sesión y regresar al login
+"""
+Función para cerrar sesión y volver al login
+"""
 def cerrar_sesion(ventana):
     for widget in ventana.winfo_children():
         widget.destroy()
     ventana_login(ventana, actualizar=True)
 
-# todo: Función para manejar la sección de clientes con restricción para cajeros
+"""
+Manejo de la sección de clientes (accesible para todos)
+"""
 def manejo_clientes(ventana, tipo_usuario, barra_lateral):
     for widget in ventana.winfo_children():
         if widget != barra_lateral:
@@ -198,15 +206,29 @@ def manejo_clientes(ventana, tipo_usuario, barra_lateral):
     Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
     Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
 
-    # todo: Restringir acceso a cajeros
-    if tipo_usuario == "Cajero":
-        messagebox.showerror("Acceso Denegado", "No tienes permiso para acceder a esta sección.")
-        return
-
     frame_clientes = crear_seccion_clientes(main_frame, barra_lateral)
     frame_clientes.pack(pady=10, fill="both", expand=True)
 
-# todo: Función para manejar la sección de empleados con restricción para cajeros y trabajadores
+"""
+Manejo de la sección de historial de ventas (accesible para todos)
+"""
+def manejo_historia_venta(ventana, tipo_usuario, barra_lateral):
+    for widget in ventana.winfo_children():
+        if widget != barra_lateral:
+            widget.destroy()
+
+    main_frame = Frame(ventana, bg="#E6F0FA")
+    main_frame.pack(expand=True, fill="both")
+
+    Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
+    Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
+
+    frame_historia = crear_seccion_historia_venta(ventana, barra_lateral)
+    frame_historia.pack(pady=10, fill="both", expand=True)
+
+"""
+Manejo de acceso restringido para empleados
+"""
 def manejo_empleados(ventana, tipo_usuario, barra_lateral):
     for widget in ventana.winfo_children():
         if widget != barra_lateral:
@@ -218,15 +240,16 @@ def manejo_empleados(ventana, tipo_usuario, barra_lateral):
     Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
     Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
 
-    # todo: Restringir acceso a cajeros y trabajadores
-    if tipo_usuario != "Gerente":
-        messagebox.showerror("Acceso Denegado", "No tienes permiso para acceder a esta sección.")
-        return
+    if tipo_usuario == "Gerente":
+        frame_empleados = crear_seccion_empleados(main_frame, barra_lateral)
+        frame_empleados.pack(pady=10, fill="both", expand=True)
+    else:
+        Label(main_frame, text="Acceso restringido: Solo Gerentes pueden gestionar empleados.",
+              font=("Helvetica", 12), bg="#E6F0FA", fg="#F44336").pack(pady=10)
 
-    frame_empleados = crear_seccion_empleados(main_frame, barra_lateral)
-    frame_empleados.pack(pady=10, fill="both", expand=True)
-
-# todo: Función para manejar la sección de configuración con restricción para cajeros y trabajadores
+"""
+Manejo de la sección de configuración (solo para Gerente)
+"""
 def manejo_configuracion(ventana, tipo_usuario, barra_lateral):
     for widget in ventana.winfo_children():
         if widget != barra_lateral:
@@ -238,135 +261,31 @@ def manejo_configuracion(ventana, tipo_usuario, barra_lateral):
     Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
     Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
 
-    # todo: Restringir acceso a cajeros y trabajadores
-    if tipo_usuario != "Gerente":
-        messagebox.showerror("Acceso Denegado", "No tienes permiso para acceder a esta sección.")
-        return
+    if tipo_usuario == "Gerente":
+        frame_titulo_submenu = Frame(main_frame, bg="#E6F0FA")
+        frame_titulo_submenu.pack(fill="x", pady=10)
 
-    frame_titulo_submenu = Frame(main_frame, bg="#E6F0FA")
-    frame_titulo_submenu.pack(fill="x", pady=10)
+        Label(frame_titulo_submenu, text="⚙️ Configuración", font=("Helvetica", 18, "bold"), bg="#E6F0FA", fg="#2E86C1").pack()
 
-    Label(frame_titulo_submenu, text="⚙️ Configuración", font=("Helvetica", 18, "bold"), bg="#E6F0FA", fg="#2E86C1").pack()
+        frame_submenu = Frame(frame_titulo_submenu, bg="#E6F0FA")
+        frame_submenu.pack(pady=10)
 
-    frame_submenu = Frame(frame_titulo_submenu, bg="#E6F0FA")
-    frame_submenu.pack(pady=10)
+        frame_contenido = Frame(main_frame, bg="#E6F0FA")
+        frame_contenido.pack(expand=True, fill="both", padx=20, pady=10)
 
-    frame_contenido = Frame(main_frame, bg="#E6F0FA")
-    frame_contenido.pack(expand=True, fill="both", padx=20, pady=10)
+        def cargar_interfaz(interfaz_func):
+            for widget in frame_contenido.winfo_children():
+                widget.destroy()
+            interfaz_func(frame_contenido, barra_lateral, ventana)
 
-    def cargar_interfaz(interfaz_func):
-        for widget in frame_contenido.winfo_children():
-            widget.destroy()
-        interfaz_func(frame_contenido, barra_lateral, ventana)
+        Button(frame_submenu, text="👤 Configuración Usuarios", font=("Helvetica", 12), bg="#1565C0", fg="white", width=20,
+               command=lambda: cargar_interfaz(crear_seccion_configuracion),
+               relief="flat", activebackground="#0D47A1", activeforeground="white")\
+            .pack(side="left", padx=10)
+    else:
+        Label(main_frame, text="Acceso restringido: Solo Gerentes pueden acceder a la configuración.",
+              font=("Helvetica", 12), bg="#E6F0FA", fg="#F44336").pack(pady=10)
 
-    Button(frame_submenu, text="👤 Configuración Usuarios", font=("Helvetica", 12), bg="#1565C0", fg="white", width=20,
-           command=lambda: cargar_interfaz(crear_seccion_configuracion),
-           relief="flat", activebackground="#0D47A1", activeforeground="white")\
-        .pack(side="left", padx=10)
-
-# todo: Modificar funciones de otras secciones para restringir acceso a cajeros
-def crear_seccion_proveedor(ventana, barra_lateral, usuario):
-    for widget in ventana.winfo_children():
-        if widget != barra_lateral:
-            widget.destroy()
-
-    main_frame = Frame(ventana, bg="#E6F0FA")
-    main_frame.pack(expand=True, fill="both")
-
-    tipo_usuario = "Cajero" if usuario.lower().startswith("cajero") else ("Gerente" if usuario.lower() == "gerente" else "Trabajador")
-    Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
-    Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
-
-    # todo: Restringir acceso a cajeros
-    if tipo_usuario == "Cajero":
-        messagebox.showerror("Acceso Denegado", "No tienes permiso para acceder a esta sección.")
-        return
-
-    frame_proveedor = crear_seccion_proveedor(main_frame, barra_lateral)
-    frame_proveedor.pack(pady=10, fill="both", expand=True)
-
-def crear_seccion_unidades(ventana, barra_lateral, usuario):
-    for widget in ventana.winfo_children():
-        if widget != barra_lateral:
-            widget.destroy()
-
-    main_frame = Frame(ventana, bg="#E6F0FA")
-    main_frame.pack(expand=True, fill="both")
-
-    tipo_usuario = "Cajero" if usuario.lower().startswith("cajero") else ("Gerente" if usuario.lower() == "gerente" else "Trabajador")
-    Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
-    Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
-
-    # todo: Restringir acceso a cajeros
-    if tipo_usuario == "Cajero":
-        messagebox.showerror("Acceso Denegado", "No tienes permiso para acceder a esta sección.")
-        return
-
-    frame_unidades = crear_seccion_unidades(main_frame, barra_lateral)
-    frame_unidades.pack(pady=10, fill="both", expand=True)
-
-def crear_seccion_categorias(ventana, barra_lateral, usuario):
-    for widget in ventana.winfo_children():
-        if widget != barra_lateral:
-            widget.destroy()
-
-    main_frame = Frame(ventana, bg="#E6F0FA")
-    main_frame.pack(expand=True, fill="both")
-
-    tipo_usuario = "Cajero" if usuario.lower().startswith("cajero") else ("Gerente" if usuario.lower() == "gerente" else "Trabajador")
-    Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
-    Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
-
-    # todo: Restringir acceso a cajeros
-    if tipo_usuario == "Cajero":
-        messagebox.showerror("Acceso Denegado", "No tienes permiso para acceder a esta sección.")
-        return
-
-    frame_categorias = crear_seccion_categorias(main_frame, barra_lateral)
-    frame_categorias.pack(pady=10, fill="both", expand=True)
-
-def crear_seccion_metodo_de_pago(ventana, barra_lateral, usuario):
-    for widget in ventana.winfo_children():
-        if widget != barra_lateral:
-            widget.destroy()
-
-    main_frame = Frame(ventana, bg="#E6F0FA")
-    main_frame.pack(expand=True, fill="both")
-
-    tipo_usuario = "Cajero" if usuario.lower().startswith("cajero") else ("Gerente" if usuario.lower() == "gerente" else "Trabajador")
-    Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
-    Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
-
-    # todo: Restringir acceso a cajeros
-    if tipo_usuario == "Cajero":
-        messagebox.showerror("Acceso Denegado", "No tienes permiso para acceder a esta sección.")
-        return
-
-    frame_metodo_pago = crear_seccion_metodo_de_pago(main_frame, barra_lateral)
-    frame_metodo_pago.pack(pady=10, fill="both", expand=True)
-
-def crear_seccion_articulos(ventana, barra_lateral, usuario):
-    for widget in ventana.winfo_children():
-        if widget != barra_lateral:
-            widget.destroy()
-
-    main_frame = Frame(ventana, bg="#E6F0FA")
-    main_frame.pack(expand=True, fill="both")
-
-    tipo_usuario = "Cajero" if usuario.lower().startswith("cajero") else ("Gerente" if usuario.lower() == "gerente" else "Trabajador")
-    Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
-    Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
-
-    # todo: Restringir acceso a cajeros
-    if tipo_usuario == "Cajero":
-        messagebox.showerror("Acceso Denegado", "No tienes permiso para acceder a esta sección.")
-        return
-
-    frame_articulos = crear_seccion_articulos(main_frame, barra_lateral)
-    frame_articulos.pack(pady=10, fill="both", expand=True)
-
-# todo: Punto de entrada principal de la aplicación
-if __name__ == "__main__":
-    ventana = creacion_ventana()
-    ventana_login(ventana)
-    ventana.mainloop()
+ventana = creacion_ventana()
+ventana_login(ventana)
+ventana.mainloop()

@@ -814,6 +814,7 @@ def eliminar_articulos(codigo):
         cursor.close()
         conexion.close()
 
+
 def actualizar_articulo(codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad):
     conexion = obtener_conexion()
     if not conexion:
@@ -893,21 +894,49 @@ def inicializar_usuarios():
 
         conexion.close()
 
-def agregar_venta(id_venta, telefono, id_metodo, total, fecha, id_empleado):
+def agregar_venta(usuario, articulos):
     conexion = obtener_conexion()
     if not conexion:
-        return
+        return False
     cursor = conexion.cursor()
-    query = """
-    INSERT INTO ventas (id_venta, telefono, id_metodo, total, fecha, id_empleado)
-    VALUES (%s, %s, %s, %s, %s, %s)
-    """
-    valores = (id_venta, telefono, id_metodo, total, fecha, id_empleado)
     try:
-        cursor.execute(query, valores)
+        # Verify stock and price for all articles
+        for articulo in articulos:
+            codigo, _, precio, cantidad, subtotal, id_metodo = articulo
+            cursor.execute("SELECT existencia, precio FROM articulos WHERE codigo = %s", (codigo,))
+            result = cursor.fetchone()
+            if not result:
+                messagebox.showerror("Error", f"El artículo con código {codigo} no existe")
+                return False
+            if result[0] < cantidad:
+                messagebox.showerror("Error", f"No hay suficiente existencia para {codigo}. Disponible: {result[0]}")
+                return False
+            if abs(float(precio) - float(result[1])) > 0.01:
+                messagebox.showerror("Error", f"El precio del artículo {codigo} no coincide con la base de datos")
+                return False
+
+        # Insert into ventas
+        query_venta = "INSERT INTO ventas (fecha, usuario) VALUES (NOW(), %s)"
+        cursor.execute(query_venta, (usuario,))
+        id_venta = cursor.lastrowid
+
+        # Insert into detalles_ventas
+        query_detalle = """
+        INSERT INTO detalles_ventas (id_venta, codigo_articulo, cantidad, subtotal, id_metodo)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        for articulo in articulos:
+            codigo, _, precio, cantidad, subtotal, id_metodo = articulo
+            valores_detalle = (id_venta, codigo, cantidad, subtotal, id_metodo)
+            cursor.execute(query_detalle, valores_detalle)
+            cursor.execute("UPDATE articulos SET existencia = existencia - %s WHERE codigo = %s", (cantidad, codigo))
+
         conexion.commit()
+        messagebox.showinfo("Éxito", "Venta registrada correctamente")
+        return True
     except mysql.connector.Error as err:
         messagebox.showerror("Error", f"Error al registrar venta: {err}")
+        return False
     finally:
         cursor.close()
         conexion.close()
@@ -968,6 +997,147 @@ def registrar_venta(codigo_articulo):
     finally:
         cursor.close()
         conexion.close()
+
+def ver_ventas(tabla):
+    conexion = obtener_conexion()
+    if not conexion:
+        return False
+    try:
+        cursor = conexion.cursor()
+        query = """
+        SELECT v.id_venta, v.fecha, v.usuario, SUM(d.subtotal) as total
+        FROM ventas v
+        JOIN detalles_ventas d ON v.id_venta = d.id_venta
+        GROUP BY v.id_venta, v.fecha, v.usuario
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for row in tabla.get_children():
+            tabla.delete(row)
+        for row in rows:
+            tabla.insert("", "end", values=row)
+        return True
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Error al mostrar ventas: {e}")
+        return False
+    finally:
+        cursor.close()
+        conexion.close()
+
+def ver_historia_venta(fecha, tabla):
+    conexion = obtener_conexion()
+    if not conexion:
+        return False
+    try:
+        cursor = conexion.cursor()
+        query = """
+        SELECT v.id_venta, v.fecha, v.usuario, a.nombre, d.cantidad, d.subtotal, m.tipo
+        FROM ventas v
+        JOIN detalles_ventas d ON v.id_venta = d.id_venta
+        JOIN articulos a ON d.codigo_articulo = a.codigo
+        JOIN metodo_de_pago m ON d.id_metodo = m.id_metodo
+        WHERE DATE(v.fecha) = %s
+        """
+        cursor.execute(query, (fecha,))
+        rows = cursor.fetchall()
+        for row in tabla.get_children():
+            tabla.delete(row)
+        for row in rows:
+            tabla.insert("", "end", values=row)
+        return True
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Error al mostrar historial de ventas: {e}")
+        return False
+    finally:
+        cursor.close()
+        conexion.close()
+
+def ver_corte_de_caja(fecha):
+    conexion = obtener_conexion()
+    if not conexion:
+        return {"ventas": [], "total": 0.00, "num_ventas": 0, "metodos": {}, "cajeros": {}}
+    cursor = conexion.cursor()
+    query = """
+    SELECT v.id_venta, v.fecha, v.usuario, d.subtotal, m.tipo
+    FROM ventas v
+    JOIN detalles_ventas d ON v.id_venta = d.id_venta
+    JOIN metodo_de_pago m ON d.id_metodo = m.id_metodo
+    WHERE DATE(v.fecha) = %s
+    """
+    valores = (fecha,)
+    try:
+        cursor.execute(query, valores)
+        rows = cursor.fetchall()
+        total = 0.00
+        num_ventas = len(set(row[0] for row in rows))
+        metodos = {"Efectivo": 0.00, "Tarjeta de crédito": 0.00, "Transferencia": 0.00}
+        cajeros = {}
+        ventas = []
+        for row in rows:
+            id_venta, fecha, usuario, subtotal, tipo_metodo = row
+            ventas.append((id_venta, fecha, usuario, subtotal))
+            total += float(subtotal)
+            if tipo_metodo in metodos:
+                metodos[tipo_metodo] += float(subtotal)
+            cajeros[usuario] = cajeros.get(usuario, 0.00) + float(subtotal)
+        return {"ventas": ventas, "total": total, "num_ventas": num_ventas, "metodos": metodos, "cajeros": cajeros}
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Error al obtener el corte de caja: {e}")
+        return {"ventas": [], "total": 0.00, "num_ventas": 0, "metodos": {}, "cajeros": {}}
+    finally:
+        cursor.close()
+        conexion.close()
+
+def registrar_corte_de_caja(fecha, total, num_ventas, efectivo, tarjeta_credito, transferencia, usuario):
+    conexion = obtener_conexion()
+    if not conexion:
+        return False
+    cursor = conexion.cursor()
+    query = """
+    INSERT INTO cortes_de_caja (fecha, total, num_ventas, efectivo, tarjeta_credito, transferencia, usuario)
+    VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    valores = (fecha, total, num_ventas, efectivo, tarjeta_credito, transferencia, usuario)
+    try:
+        cursor.execute(query, valores)
+        conexion.commit()
+        messagebox.showinfo("Éxito", f"Corte de caja del {fecha} registrado correctamente")
+        return True
+    except mysql.connector.Error as e:
+        if e.errno == 1062:
+            messagebox.showerror("Error", f"Ya existe un corte de caja para la fecha {fecha}")
+        else:
+            messagebox.showerror("Error", f"Error al registrar el corte de caja: {e}")
+        return False
+    finally:
+        cursor.close()
+        conexion.close()
+
+def ver_cortes_historicos(fecha=None):
+    conexion = obtener_conexion()
+    if not conexion:
+        return []
+    cursor = conexion.cursor()
+    query = """
+    SELECT id_corte, fecha, total, num_ventas, efectivo, tarjeta_credito, transferencia, usuario
+    FROM cortes_de_caja
+    """
+    valores = ()
+    if fecha:
+        query += " WHERE DATE(fecha) = %s"
+        valores = (fecha,)
+    try:
+        cursor.execute(query, valores)
+        rows = cursor.fetchall()
+        return rows
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Error al obtener los cortes históricos: {e}")
+        return []
+    finally:
+        cursor.close()
+        conexion.close()
+        conexion.close()
+
         
 # Crear la tabla e inicializar usuarios al iniciar el programa
 inicializar_usuarios()

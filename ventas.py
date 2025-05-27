@@ -1,17 +1,14 @@
 from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox, StringVar
-from db_soriana import buscar_articulo, agregar_venta, actualizar_stock, buscar_cliente, buscar_metodo_de_pago, ver_metodo_de_pago
+from db_soriana import buscar_articulo, agregar_venta, buscar_metodo_de_pago, ver_metodo_de_pago
 from datetime import datetime
-import uuid
 import mysql.connector
 
-# Clase para almacenar el estado de la venta
 class VentaEstado:
     def __init__(self):
-        self.articulos = []  # Lista de [código, nombre, precio, cantidad, subtotal]
+        self.articulos = []  # Lista de [código, nombre, precio, cantidad, subtotal, id_metodo]
         self.total = "0.00"
-        self.telefono = ""
+        self.usuario = "cajero1"  # Valor por defecto
 
-# Estado global de la venta
 venta_estado = VentaEstado()
 
 def interfaz_ventas():
@@ -22,7 +19,7 @@ def interfaz_ventas():
     ventana.mainloop()
 
 def crear_seccion_ventas(ventana, barra_lateral, usuario):
-    campos = ["Código", "Nombre", "Precio", "Cantidad", "Subtotal"]
+    campos = ["Código", "Nombre", "Precio", "Cantidad", "Subtotal", "Método de Pago"]
 
     if barra_lateral:
         for widget in ventana.winfo_children():
@@ -43,7 +40,7 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
 
     Label(frame_izquierdo, text="Ventas", font=("Arial", 16, "bold"), bg="#E6F0FA").pack(pady=10)
 
-    # Search and client frame
+    # Search frame
     frame_search = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_search.pack(fill="x", pady=5)
     Label(frame_search, text="Código:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
@@ -52,23 +49,22 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
     Label(frame_search, text="Cantidad:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
     entry_cantidad = Entry(frame_search, font=("Arial", 12), width=5)
     entry_cantidad.pack(side="left", padx=(0, 10))
-    entry_cantidad.insert(0, "1")  # Valor por defecto
+    entry_cantidad.insert(0, "1")
     Button(frame_search, text="Agregar", font=("Arial", 10), bg="#2196F3", fg="white",
            command=lambda: buscar_y_mostrar()).pack(side="left", padx=5)
-    Label(frame_search, text="Teléfono Cliente:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
-    entry_telefono = Entry(frame_search, font=("Arial", 12), width=15)
-    entry_telefono.pack(side="left", padx=(0, 10))
-    entry_telefono.insert(0, venta_estado.telefono)
 
-    # Payment method frame
+    # Payment and cashier frame
     frame_pago = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_pago.pack(fill="x", pady=5)
     Label(frame_pago, text="Método de Pago:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
     metodo_pago_var = StringVar()
     combo_metodo_pago = ttk.Combobox(frame_pago, textvariable=metodo_pago_var, font=("Arial", 12), state="readonly", width=15)
     combo_metodo_pago.pack(side="left", padx=(0, 10))
+    Label(frame_pago, text="Usuario:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
+    entry_usuario = Entry(frame_pago, font=("Arial", 12), width=15)
+    entry_usuario.pack(side="left", padx=(0, 10))
+    entry_usuario.insert(0, venta_estado.usuario)
 
-    # Load payment methods from the database
     def cargar_metodos_pago():
         conexion = obtener_conexion()
         if not conexion:
@@ -79,14 +75,12 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
             cursor.execute("SELECT id_metodo, tipo FROM metodo_de_pago")
             metodos = cursor.fetchall()
             if not metodos:
-                messagebox.showwarning("Advertencia", "No hay métodos de pago registrados. Por favor, añada un método de pago.")
+                messagebox.showwarning("Advertencia", "No hay métodos de pago registrados.")
                 combo_metodo_pago['values'] = []
                 metodo_pago_var.set("")
                 return
-            # Formato: "id_metodo - tipo"
             opciones = [f"{metodo[0]} - {metodo[1]}" for metodo in metodos]
             combo_metodo_pago['values'] = opciones
-            # Seleccionar el primer método por defecto, si existe
             metodo_pago_var.set(opciones[0] if opciones else "")
         except mysql.connector.Error as e:
             messagebox.showerror("Error", f"Error al cargar los métodos de pago: {e}")
@@ -94,11 +88,10 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
             cursor.close()
             conexion.close()
 
-    cargar_metodos_pago()  # Call the function to load payment methods
-    
+    cargar_metodos_pago()
     entry_codigo.focus_set()
 
-    # Table frame (reduced height)
+    # Table frame
     frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
     frame_tabla.pack(padx=10, fill="both", expand=True)
     tabla = ttk.Treeview(frame_tabla, columns=campos, show="headings", height=12)
@@ -107,7 +100,6 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
         tabla.column(col, width=100)
     tabla.pack(pady=10, fill="both", expand=True)
 
-    # Cargar artículos almacenados
     for articulo in venta_estado.articulos:
         tabla.insert("", "end", values=articulo)
 
@@ -116,9 +108,9 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
         if selected_item:
             values = tabla.item(selected_item)['values']
             entry_codigo.delete(0, 'end')
-            entry_codigo.insert(0, values[0])  # Código
+            entry_codigo.insert(0, values[0])
             entry_cantidad.delete(0, 'end')
-            entry_cantidad.insert(0, str(int(values[3])))  # Cantidad
+            entry_cantidad.insert(0, str(int(values[3])))
         else:
             entry_codigo.delete(0, 'end')
             entry_cantidad.delete(0, 'end')
@@ -138,7 +130,6 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
         if not codigo:
             messagebox.showerror("Error", "Ingrese un código")
             return
-
         try:
             cantidad = int(entry_cantidad.get().strip()) if entry_cantidad.get().strip() else 1
             if cantidad <= 0:
@@ -147,9 +138,14 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
         except ValueError:
             messagebox.showerror("Error", "La cantidad debe ser un número entero")
             return
-
-        resultado = buscar_articulo(codigo)
+        metodo_seleccionado = metodo_pago_var.get()
+        if not metodo_seleccionado:
+            messagebox.showerror("Error", "Seleccione un método de pago")
+            return
+        id_metodo = metodo_seleccionado.split(" - ")[0]
+        resultado = buscar_articulo("codigo", codigo)
         if resultado:
+            resultado = resultado[0]
             if resultado[4] < cantidad:
                 messagebox.showwarning("Sin stock", f"No hay suficiente existencia del artículo {resultado[1]} (disponible: {resultado[4]})")
                 entry_codigo.delete(0, 'end')
@@ -159,34 +155,24 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
                 return
             precio = resultado[2]
             subtotal = precio * cantidad
-            articulo = (codigo, resultado[1], precio, cantidad, subtotal)
+            articulo = (codigo, resultado[1], precio, cantidad, subtotal, metodo_seleccionado.split(" - ")[1])
             tabla.insert("", "end", values=articulo)
-            venta_estado.articulos.append(articulo)
+            venta_estado.articulos.append((codigo, resultado[1], precio, cantidad, subtotal, id_metodo))
             total_var.set(f"{sum(float(item[4]) for item in venta_estado.articulos):.2f}")
             venta_estado.total = total_var.get()
-            venta_estado.telefono = entry_telefono.get().strip()
+            venta_estado.usuario = entry_usuario.get().strip()
             entry_codigo.delete(0, 'end')
             entry_cantidad.delete(0, 'end')
             entry_cantidad.insert(0, "1")
         else:
-            response = messagebox.askyesno("No encontrado", f"No se encontró el artículo con código {codigo}. ¿Desea agregarlo?")
-            if response:
-                from articulos import crear_seccion_articulos
-                for widget in ventana.winfo_children():
-                    if widget != barra_lateral:
-                        widget.destroy()
-                venta_estado.telefono = entry_telefono.get().strip()
-                crear_seccion_articulos(ventana, barra_lateral, codigo)
+            messagebox.showerror("No encontrado", f"No se encontró el artículo con código {codigo}.")
         entry_codigo.focus_set()
-
-    entry_codigo.bind('<Return>', lambda event: entry_cantidad.focus_set())
 
     def actualizar_producto():
         selected_item = tabla.selection()
         if not selected_item:
             messagebox.showerror("Error", "Seleccione un artículo para actualizar")
             return
-
         try:
             nueva_cantidad = int(entry_cantidad.get().strip()) if entry_cantidad.get().strip() else 1
             if nueva_cantidad <= 0:
@@ -195,22 +181,27 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
         except ValueError:
             messagebox.showerror("Error", "La cantidad debe ser un número entero")
             return
-
+        metodo_seleccionado = metodo_pago_var.get()
+        if not metodo_seleccionado:
+            messagebox.showerror("Error", "Seleccione un método de pago")
+            return
+        id_metodo = metodo_seleccionado.split(" - ")[0]
         codigo = tabla.item(selected_item)['values'][0]
-        resultado = buscar_articulo(codigo)
+        resultado = buscar_articulo("codigo", codigo)
         if resultado:
+            resultado = resultado[0]
             if resultado[4] < nueva_cantidad:
                 messagebox.showwarning("Sin stock", f"No hay suficiente existencia del artículo {resultado[1]} (disponible: {resultado[4]})")
                 return
             precio = resultado[2]
             subtotal = precio * nueva_cantidad
-            articulo = (codigo, resultado[1], precio, nueva_cantidad, subtotal)
+            articulo = (codigo, resultado[1], precio, nueva_cantidad, subtotal, metodo_seleccionado.split(" - ")[1])
             tabla.item(selected_item, values=articulo)
             index = next(i for i, item in enumerate(venta_estado.articulos) if item[0] == codigo)
-            venta_estado.articulos[index] = articulo
+            venta_estado.articulos[index] = (codigo, resultado[1], precio, nueva_cantidad, subtotal, id_metodo)
             total_var.set(f"{sum(float(item[4]) for item in venta_estado.articulos):.2f}")
             venta_estado.total = total_var.get()
-            venta_estado.telefono = entry_telefono.get().strip()
+            venta_estado.usuario = entry_usuario.get().strip()
             entry_codigo.delete(0, 'end')
             entry_cantidad.delete(0, 'end')
             entry_cantidad.insert(0, "1")
@@ -232,7 +223,7 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
         venta_estado.articulos = [item for item in venta_estado.articulos if item[0] != codigo]
         total_var.set(f"{sum(float(item[4]) for item in venta_estado.articulos):.2f}")
         venta_estado.total = total_var.get()
-        venta_estado.telefono = entry_telefono.get().strip()
+        venta_estado.usuario = entry_usuario.get().strip()
         entry_codigo.delete(0, 'end')
         entry_cantidad.delete(0, 'end')
         entry_cantidad.insert(0, "1")
@@ -242,40 +233,40 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
         if not tabla.get_children():
             messagebox.showerror("Error", "No hay artículos en la venta")
             return
-
-        telefono = entry_telefono.get().strip() or None
-        if telefono and not buscar_cliente(telefono):
-            messagebox.showerror("Error", "El cliente con ese teléfono no existe")
+        usuario = entry_usuario.get().strip()
+        if not usuario:
+            messagebox.showerror("Error", "Ingrese un usuario")
             return
-
-        # Extract id_metodo from Combobox selection
-        metodo_seleccionado = metodo_pago_var.get()
-        if not metodo_seleccionado:
-            messagebox.showerror("Error", "Seleccione un método de pago")
+        conexion = obtener_conexion()
+        if not conexion:
             return
-        id_metodo = metodo_seleccionado.split(" - ")[0]
-        if not buscar_metodo_de_pago(id_metodo):
-            messagebox.showerror("Error", f"El método de pago con ID {id_metodo} no existe en la base de datos")
+        cursor = conexion.cursor()
+        cursor.execute("SELECT usuario FROM usuarios WHERE usuario = %s", (usuario,))
+        if not cursor.fetchone():
+            messagebox.showerror("Error", "El usuario no existe")
+            cursor.close()
+            conexion.close()
             return
-
-        id_venta = str(uuid.uuid4())[:10]
-        total = float(total_var.get())
-        fecha = datetime.now().strftime('%Y-%m-%d')
-        id_empleado = 1
-
-        agregar_venta(id_venta, telefono, id_metodo, total, fecha, id_empleado)
+        cursor.close()
+        conexion.close()
+        
+        # Prepare articulos with id_metodo
+        articulos_con_metodo = []
         for item in tabla.get_children():
-            codigo = tabla.item(item)['values'][0]
-            cantidad = int(tabla.item(item)['values'][3])
-            actualizar_stock(codigo, cantidad)
+            values = tabla.item(item)['values']
+            codigo, nombre, precio, cantidad, subtotal, metodo_nombre = values
+            metodo_seleccionado = metodo_pago_var.get()
+            id_metodo = metodo_seleccionado.split(" - ")[0]  # Extract id_metodo from combo
+            articulos_con_metodo.append((codigo, nombre, float(precio), int(cantidad), float(subtotal), int(id_metodo)))
+        
+        agregar_venta(usuario, articulos_con_metodo)
         messagebox.showinfo("Éxito", "Venta registrada correctamente")
         for row in tabla.get_children():
             tabla.delete(row)
         venta_estado.articulos = []
         venta_estado.total = "0.00"
-        venta_estado.telefono = ""
+        venta_estado.usuario = usuario
         total_var.set("0.00")
-        entry_telefono.delete(0, 'end')
         entry_codigo.delete(0, 'end')
         entry_cantidad.delete(0, 'end')
         entry_cantidad.insert(0, "1")
@@ -287,9 +278,7 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
             tabla.delete(row)
         venta_estado.articulos = []
         venta_estado.total = "0.00"
-        venta_estado.telefono = ""
         total_var.set("0.00")
-        entry_telefono.delete(0, 'end')
         entry_codigo.delete(0, 'end')
         entry_cantidad.delete(0, 'end')
         entry_cantidad.insert(0, "1")
@@ -315,9 +304,7 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
 
     return frame_principal
 
-# Función auxiliar para conectar a la base de datos (necesaria para cargar_metodos_pago)
 def obtener_conexion():
-    import mysql.connector
     try:
         return mysql.connector.connect(
             host="localhost",

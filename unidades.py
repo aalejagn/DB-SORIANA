@@ -9,7 +9,7 @@ def interfaz_unidades():
     ventana.mainloop()
 
 def crear_seccion_unidades(ventana, barra_lateral):
-    campos = ["ID Unidad:", "Nombre:", "Descripción:"]
+    campos = ["ID Unidad:", "Tipo:", "Descripción:"]
 
     if barra_lateral:
         for widget in ventana.winfo_children():
@@ -34,7 +34,7 @@ def crear_seccion_unidades(ventana, barra_lateral):
     frame_search.pack(fill="x", pady=5)
     Label(frame_search, text="Buscar por:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
     criterio_var = StringVar(value="ID Unidad")
-    combo_busqueda = ttk.Combobox(frame_search, textvariable=criterio_var, values=["ID Unidad", "Nombre"], font=("Arial", 12), state="readonly", width=10)
+    combo_busqueda = ttk.Combobox(frame_search, textvariable=criterio_var, values=["ID Unidad", "Tipo"], font=("Arial", 12), state="readonly", width=10)
     combo_busqueda.pack(side="left", padx=(0, 5))
     entry_busqueda = Entry(frame_search, font=("Arial", 12), width=20)
     entry_busqueda.pack(side="left", padx=(0, 10))
@@ -45,8 +45,14 @@ def crear_seccion_unidades(ventana, barra_lateral):
     entradas = {}
     for i, campo in enumerate(campos):
         Label(frame_entradas, text=campo, bg="#E6F0FA", font=("Arial", 12)).grid(row=i, column=0, padx=(10, 2), pady=5, sticky="e")
-        entrada = Entry(frame_entradas, font=("Arial", 12))
-        entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
+        if campo == "Tipo:":
+            opciones_tipos = ["Gramos", "Kilogramos", "Litros", "Mililitros", "Unidades", "Piezas"]
+            entrada = ttk.Combobox(frame_entradas, values=opciones_tipos, font=("Arial", 12), state="readonly")
+            entrada.set("Unidades")  # Valor por defecto
+            entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
+        else:
+            entrada = Entry(frame_entradas, font=("Arial", 12))
+            entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
     frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
@@ -74,8 +80,11 @@ def crear_seccion_unidades(ventana, barra_lateral):
         if select_item:
             values = tabla.item(select_item)['values']
             for i, campo in enumerate(campos):
-                entradas[campo].delete(0, 'end')
-                entradas[campo].insert(0, values[i])
+                if campo == "Tipo:":
+                    entradas[campo].set(values[i])  # Usar set para Combobox
+                else:
+                    entradas[campo].delete(0, 'end')
+                    entradas[campo].insert(0, values[i])
             id_unidad_original_var[0] = values[0]
 
     tabla.bind('<<TreeviewSelect>>', on_select)
@@ -85,19 +94,25 @@ def crear_seccion_unidades(ventana, barra_lateral):
         valor = entry_busqueda.get().strip()
         if not valor:
             ver_unidad(tabla)
-            for entrada in entradas.values():
-                entrada.delete(0, 'end')
+            for campo, entrada in entradas.items():
+                if campo == "Tipo:":
+                    entrada.set("Unidades")
+                else:
+                    entrada.delete(0, 'end')
             id_unidad_original_var[0] = None
             entry_busqueda.focus_set()
             return
 
-        criterio_map = {"id unidad": "id_unidad", "nombre": "nombre"}
+        criterio_map = {"id unidad": "id_unidad", "tipo": "tipo"}
         resultados = buscar_unidad(criterio_map[criterio], valor)
 
         for row in tabla.get_children():
             tabla.delete(row)
-        for entrada in entradas.values():
-            entrada.delete(0, 'end')
+        for campo, entrada in entradas.items():
+            if campo == "Tipo:":
+                entrada.set("Unidades")
+            else:
+                entrada.delete(0, 'end')
         id_unidad_original_var[0] = None
 
         if not resultados:
@@ -108,7 +123,10 @@ def crear_seccion_unidades(ventana, barra_lateral):
         resultado = resultados[0]  # Toma el primer resultado
         tabla.insert("", "end", values=resultado)
         for i, campo in enumerate(campos):
-            entradas[campo].insert(0, resultado[i])
+            if campo == "Tipo:":
+                entradas[campo].set(resultado[i])
+            else:
+                entradas[campo].insert(0, resultado[i])
         id_unidad_original_var[0] = resultado[0]  # ID Unidad está en índice 0
         entry_busqueda.focus_set()
 
@@ -119,14 +137,14 @@ def crear_seccion_unidades(ventana, barra_lateral):
 
     def agregar():
         id_unidad = entradas["ID Unidad:"].get().strip()
-        nombre = entradas["Nombre:"].get().strip()
+        tipo = entradas["Tipo:"].get().strip()
         descripcion = entradas["Descripción:"].get().strip()
 
-        if not all([id_unidad, nombre, descripcion]):
+        if not all([id_unidad, tipo, descripcion]):
             messagebox.showerror("Error", "Todos los campos son obligatorios")
             return
 
-        agregar_unidad(id_unidad, nombre, descripcion)
+        agregar_unidad(id_unidad, tipo, descripcion)
         ver_unidad(tabla)
         limpiar_campos()
 
@@ -141,10 +159,10 @@ def crear_seccion_unidades(ventana, barra_lateral):
 
     def actualizar_datos():
         id_unidad = entradas["ID Unidad:"].get().strip()
-        nombre = entradas["Nombre:"].get().strip()
+        tipo = entradas["Tipo:"].get().strip()
         descripcion = entradas["Descripción:"].get().strip()
 
-        if not all([id_unidad, nombre, descripcion]):
+        if not all([id_unidad, tipo, descripcion]):
             messagebox.showerror("Error", "Todos los campos son obligatorios")
             return
 
@@ -152,13 +170,16 @@ def crear_seccion_unidades(ventana, barra_lateral):
             messagebox.showerror("Error", "Seleccione una unidad para actualizar")
             return
 
-        actualizar_unidad(id_unidad_original_var[0], id_unidad, nombre, descripcion)
+        actualizar_unidad(id_unidad_original_var[0], id_unidad, tipo, descripcion)
         ver_unidad(tabla)
         limpiar_campos()
 
     def limpiar_campos():
-        for entrada in entradas.values():
-            entrada.delete(0, 'end')
+        for campo, entrada in entradas.items():
+            if campo == "Tipo:":
+                entrada.set("Unidades")
+            else:
+                entrada.delete(0, 'end')
         entry_busqueda.delete(0, 'end')
         id_unidad_original_var[0] = None
 

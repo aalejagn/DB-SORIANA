@@ -45,8 +45,14 @@ def crear_seccion_metodo_de_pago(ventana, barra_lateral):
     entradas = {}
     for i, campo in enumerate(campos):
         Label(frame_entradas, text=campo, bg="#E6F0FA", font=("Arial", 12)).grid(row=i, column=0, padx=(10, 2), pady=5, sticky="e")
-        entrada = Entry(frame_entradas, font=("Arial", 12))
-        entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
+        if campo == "Tipo:":
+            opciones_tipos = ["Efectivo", "Tarjeta de Débito", "Transferencia"]
+            entrada = ttk.Combobox(frame_entradas, values=opciones_tipos, font=("Arial", 12), state="readonly")
+            entrada.set("Efectivo")  # Valor por defecto
+            entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
+        else:
+            entrada = Entry(frame_entradas, font=("Arial", 12))
+            entrada.grid(row=i, column=1, padx=(0, 10), pady=5, sticky="w")
         entradas[campo] = entrada
 
     frame_tabla = Frame(frame_izquierdo, bg="#E6F0FA")
@@ -74,8 +80,11 @@ def crear_seccion_metodo_de_pago(ventana, barra_lateral):
         if select_item:
             values = tabla.item(select_item)['values']
             for i, campo in enumerate(campos):
-                entradas[campo].delete(0, 'end')
-                entradas[campo].insert(0, values[i])
+                if campo == "Tipo:":
+                    entradas[campo].set(values[i])  # Usar set para Combobox
+                else:
+                    entradas[campo].delete(0, 'end')
+                    entradas[campo].insert(0, values[i])
             id_metodo_original_var[0] = values[0]
 
     tabla.bind('<<TreeviewSelect>>', on_select)
@@ -85,8 +94,11 @@ def crear_seccion_metodo_de_pago(ventana, barra_lateral):
         valor = entry_busqueda.get().strip()
         if not valor:
             ver_metodo_de_pago(tabla)
-            for entrada in entradas.values():
-                entrada.delete(0, 'end')
+            for campo, entrada in entradas.items():
+                if campo == "Tipo:":
+                    entrada.set("Efectivo")
+                else:
+                    entrada.delete(0, 'end')
             id_metodo_original_var[0] = None
             entry_busqueda.focus_set()
             return
@@ -96,8 +108,11 @@ def crear_seccion_metodo_de_pago(ventana, barra_lateral):
 
         for row in tabla.get_children():
             tabla.delete(row)
-        for entrada in entradas.values():
-            entrada.delete(0, 'end')
+        for campo, entrada in entradas.items():
+            if campo == "Tipo:":
+                entrada.set("Efectivo")
+            else:
+                entrada.delete(0, 'end')
         id_metodo_original_var[0] = None
 
         if not resultados:
@@ -108,7 +123,10 @@ def crear_seccion_metodo_de_pago(ventana, barra_lateral):
         resultado = resultados[0]  # Toma el primer resultado
         tabla.insert("", "end", values=resultado)
         for i, campo in enumerate(campos):
-            entradas[campo].insert(0, resultado[i])
+            if campo == "Tipo:":
+                entradas[campo].set(resultado[i])
+            else:
+                entradas[campo].insert(0, resultado[i])
         id_metodo_original_var[0] = resultado[0]  # ID Método está en índice 0
         entry_busqueda.focus_set()
 
@@ -157,8 +175,11 @@ def crear_seccion_metodo_de_pago(ventana, barra_lateral):
         limpiar_campos()
 
     def limpiar_campos():
-        for entrada in entradas.values():
-            entrada.delete(0, 'end')
+        for campo, entrada in entradas.items():
+            if campo == "Tipo:":
+                entrada.set("Efectivo")
+            else:
+                entrada.delete(0, 'end')
         entry_busqueda.delete(0, 'end')
         id_metodo_original_var[0] = None
 
