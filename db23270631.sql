@@ -97,6 +97,30 @@ CREATE TABLE ventas (
     FOREIGN KEY (codigo_articulo) REFERENCES articulos(codigo)
 );
 
+-- Crear nueva tabla ventas
+CREATE TABLE ventas (
+    id_venta VARCHAR(10) PRIMARY KEY,
+    telefono VARCHAR(15),
+    id_metodo INT NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    fecha DATE NOT NULL,
+    id_empleado INT NOT NULL,
+    FOREIGN KEY (telefono) REFERENCES clientes(telefono),
+    FOREIGN KEY (id_metodo) REFERENCES metodo_de_pago(id_metodo),
+    FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)
+);
+
+-- Crear tabla detalles_ventas
+CREATE TABLE detalles_ventas (
+    id_venta VARCHAR(10),
+    codigo_articulo VARCHAR(50),
+    cantidad INT NOT NULL,
+    subtotal DECIMAL(10,2) NOT NULL,
+    PRIMARY KEY (id_venta, codigo_articulo),
+    FOREIGN KEY (id_venta) REFERENCES ventas(id_venta),
+    FOREIGN KEY (codigo_articulo) REFERENCES articulos(codigo)
+);
+
 -- Insertar datos en las tablas
 -- ================================================
 

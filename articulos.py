@@ -147,6 +147,7 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
                 messagebox.showwarning("No encontrado", f"No se encontró un artículo con el nombre {valor}")
         entry_busqueda.focus_set()
 
+    # En la función agregar (alrededor de la línea 170)
     def agregar():
         codigo = entradas["Código:"].get().strip()
         nombre = entradas["Nombre:"].get().strip()
@@ -176,7 +177,7 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             if existencia < 0:
                 messagebox.showerror("Error", "La existencia no puede ser negativa")
                 return
-            if not (buscar_catalogo(categoria_codigo) and buscar_proveedor(id_proveedor) and buscar_unidad(id_unidad)):
+            if not (buscar_catalogo("codigo", categoria_codigo) and buscar_proveedor("id_proveedor", id_proveedor) and buscar_unidad("id_unidad", id_unidad)):
                 messagebox.showerror("Error", "Código de categoría, ID de proveedor o ID de unidad no válidos")
                 return
         except ValueError:
@@ -207,6 +208,7 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo eliminar el artículo: {e}")
 
+    # En la función actualizar_datos (alrededor de la línea 220)
     def actualizar_datos():
         codigo = entradas["Código:"].get().strip()
         nombre = entradas["Nombre:"].get().strip()
@@ -240,7 +242,7 @@ def crear_seccion_articulos(ventana, barra_lateral, codigo_prellenado=None):
             if existencia < 0:
                 messagebox.showerror("Error", "La existencia no puede ser negativa")
                 return
-            if not (buscar_catalogo(categoria_codigo) and buscar_proveedor(id_proveedor) and buscar_unidad(id_unidad)):
+            if not (buscar_catalogo("codigo", categoria_codigo) and buscar_proveedor("id_proveedor", id_proveedor) and buscar_unidad("id_unidad", id_unidad)):
                 messagebox.showerror("Error", "Código de categoría, ID de proveedor o ID de unidad no válidos")
                 return
         except ValueError:

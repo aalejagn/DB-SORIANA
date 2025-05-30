@@ -10,6 +10,8 @@ from ventas import crear_seccion_ventas
 from configuracion_interfaz import crear_seccion_configuracion
 from corte_caja import crear_seccion_corte_de_caja
 from historia_venta import crear_seccion_historia_venta
+from historial_compras import crear_seccion_historia_compra
+from compras import crear_seccion_compras
 from configuracion import Configuracion
 from PIL import Image, ImageTk
 
@@ -105,17 +107,28 @@ def barra_lateral(ventana, usuario):
     frame_superior = Frame(barra_lateral, bg="#1E88E5")
     frame_superior.pack(fill="x", pady=15, padx=15)
     
-    tipo_usuario = "Gerente" if usuario.lower() == "gerente" else "Trabajador"
+    # Determinar el tipo de usuario
+    usuario = usuario.lower()
+    if usuario == "gerente":
+        tipo_usuario = "Gerente"
+    elif usuario.startswith("supervisor"):
+        tipo_usuario = "Supervisor"
+    else:
+        tipo_usuario = "Trabajador"
+    
     Label(frame_superior, text=f"👤 {tipo_usuario}", font=("Helvetica", 16, "bold"), bg="#1E88E5", fg="white").pack()
 
     # Definimos opciones según el tipo de usuario
     if tipo_usuario == "Trabajador":
         opciones = ["Ventas", "Historial de Ventas"]
+    elif tipo_usuario == "Supervisor":
+        opciones = ["Ventas", "Historial de Ventas", "Compras", "Historial de Compras"]
     else:  # Gerente
-        opciones = ["Ventas", "Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago", "Articulos", "Historial de Ventas", "Corte de Caja", "Empleado", "Configuración"]
+        opciones = ["Ventas", "Compras", "Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago", "Articulos", "Historial de Ventas", "Historial de Compras", "Corte de Caja", "Empleado", "Configuración"]
 
     funciones = {
         "Ventas": lambda: crear_seccion_ventas(ventana, barra_lateral, usuario),
+        "Compras": lambda: manejo_compras(ventana, tipo_usuario, barra_lateral, usuario),
         "Clientes": lambda: manejo_clientes(ventana, tipo_usuario, barra_lateral),
         "Proveedor": lambda: crear_seccion_proveedor(ventana, barra_lateral),
         "Unidades": lambda: crear_seccion_unidades(ventana, barra_lateral),
@@ -123,6 +136,7 @@ def barra_lateral(ventana, usuario):
         "Metodo de pago": lambda: crear_seccion_metodo_de_pago(ventana, barra_lateral),
         "Articulos": lambda: crear_seccion_articulos(ventana, barra_lateral),
         "Historial de Ventas": lambda: manejo_historia_venta(ventana, tipo_usuario, barra_lateral),
+        "Historial de Compras": lambda: manejo_historia_compra(ventana, tipo_usuario, barra_lateral),
         "Corte de Caja": lambda: crear_seccion_corte_de_caja(ventana, barra_lateral),
         "Empleado": lambda: manejo_empleados(ventana, tipo_usuario, barra_lateral),
         "Configuración": lambda: manejo_configuracion(ventana, tipo_usuario, barra_lateral)
@@ -145,7 +159,6 @@ def barra_lateral(ventana, usuario):
     title_frame = Frame(main_frame, bg="#E6F0FA")
     title_frame.pack(pady=20)
 
-    # Corregimos el manejo de la imagen para usar PIL en lugar de PhotoImage
     try:
         logo_img = Image.open("logos/log.png")
         logo_img = logo_img.resize((200, 100), Image.Resampling.LANCZOS)
@@ -155,7 +168,6 @@ def barra_lateral(ventana, usuario):
     except Exception as e:
         Label(title_frame, text="No se pudo cargar la imagen", font=("Helvetica", 12), bg="#E6F0FA", fg="#F44336").pack(pady=10)
 
-    # Add a black separator line between the image and labels
     separator = ttk.Separator(title_frame, orient='horizontal')
     separator.pack(fill="x", expand=True, pady=10)
     style = ttk.Style()
@@ -168,7 +180,7 @@ def barra_lateral(ventana, usuario):
 
     caracteristicas = [
         ("⏱️ Rápido y fácil de usar", "#32CD32"),
-        ("📊 Control de inventario en tiempo real", "#32CD32"),
+        ("📊 Control de articulos en tiempo real", "#32CD32"),
         ("📈 Reportes detallados de ventas", "#32CD32"),
         ("👥 Gestión de clientes y proveedores", "#32CD32")
     ]
@@ -183,7 +195,6 @@ def barra_lateral(ventana, usuario):
            command=lambda: manejo_clientes(ventana, tipo_usuario, barra_lateral),
            relief="flat", activebackground="#0D47A1", activeforeground="white", bd=0, padx=10, pady=5)\
         .pack(pady=40)
-
 """
 Función para cerrar sesión y volver al login
 """
@@ -227,6 +238,27 @@ def manejo_historia_venta(ventana, tipo_usuario, barra_lateral):
     frame_historia.pack(pady=10, fill="both", expand=True)
 
 """
+Manejo de la sección de historial de compras (accesible para Gerente)
+"""
+def manejo_historia_compra(ventana, tipo_usuario, barra_lateral):
+    for widget in ventana.winfo_children():
+        if widget != barra_lateral:
+            widget.destroy()
+
+    main_frame = Frame(ventana, bg="#E6F0FA")
+    main_frame.pack(expand=True, fill="both")
+
+    Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
+    Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
+
+    if tipo_usuario in ["Gerente", "Supervisor"]:
+        frame_historia = crear_seccion_historia_compra(ventana, barra_lateral)
+        frame_historia.pack(pady=10, fill="both", expand=True)
+    else:
+        Label(main_frame, text="Acceso restringido: Solo Gerentes y Supervisores pueden ver el historial de compras.",
+              font=("Helvetica", 12), bg="#E6F0FA", fg="#F44336").pack(pady=10)
+
+"""
 Manejo de acceso restringido para empleados
 """
 def manejo_empleados(ventana, tipo_usuario, barra_lateral):
@@ -246,6 +278,31 @@ def manejo_empleados(ventana, tipo_usuario, barra_lateral):
     else:
         Label(main_frame, text="Acceso restringido: Solo Gerentes pueden gestionar empleados.",
               font=("Helvetica", 12), bg="#E6F0FA", fg="#F44336").pack(pady=10)
+
+
+"""Manejo de la seccion de compras"""
+"""
+Manejo de la sección de compras (accesible para Gerente)
+"""
+def manejo_compras(ventana, tipo_usuario, barra_lateral, usuario):
+    for widget in ventana.winfo_children():
+        if widget != barra_lateral:
+            widget.destroy()
+
+    main_frame = Frame(ventana, bg="#E6F0FA")
+    main_frame.pack(expand=True, fill="both")
+
+    Label(main_frame, text="DB_SORIANA", font=("Helvetica", 24, "bold"), bg="#E6F0FA", fg="#D4A017").pack(pady=10)
+    Label(main_frame, text=f"Tipo de usuario: {tipo_usuario}", font=("Helvetica", 12), bg="#E6F0FA", fg="#555").pack()
+
+    if tipo_usuario in ["Gerente", "Supervisor"]:
+        frame_compras = crear_seccion_compras(ventana, barra_lateral, usuario)
+        frame_compras.pack(pady=10, fill="both", expand=True)
+    else:
+        Label(main_frame, text="Acceso restringido: Solo Gerentes y Supervisores pueden gestionar compras.",
+              font=("Helvetica", 12), bg="#E6F0FA", fg="#F44336").pack(pady=10)
+
+
 
 """
 Manejo de la sección de configuración (solo para Gerente)

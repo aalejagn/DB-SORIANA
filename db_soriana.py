@@ -1,6 +1,6 @@
 import mysql.connector
 from tkinter import messagebox
-
+from datetime import datetime
 """Hacemos la conexion de la base de datos"""
 def obtener_conexion():
     try:
@@ -717,7 +717,7 @@ def buscar_unidad(criterio, valor):
         conexion.close()
 
 
-# TODO: MANEJO DE FUNCIONES PARA EL DB SORIANA CON ARTICULOS
+# TODO: MANEJO DE FUNCIONES PARA EL DB SORIANA CON articulos
 
 def agregar_articulo(codigo, nombre, precio, costo, existencia, descripcion, fecha_caducidad, categoria_codigo, id_proveedor, id_unidad):
     conexion = obtener_conexion()
@@ -893,49 +893,51 @@ def inicializar_usuarios():
         cursor.close()
 
         conexion.close()
-
-def agregar_venta(usuario, articulos):
+"""Nuevos cambios"""
+def agregar_venta(usuario, articulos, telefono):
+    """
+    Registra una venta en la base de datos.
+    Args:
+        usuario: Nombre del usuario (cajero).
+        articulos: Lista de tuplas (código, nombre, precio, cantidad, subtotal, id_metodo).
+        telefono: Teléfono del cliente (opcional).
+    Returns:
+        bool: True si la venta se registró correctamente, False en caso de error.
+    """
     conexion = obtener_conexion()
     if not conexion:
         return False
-    cursor = conexion.cursor()
     try:
-        # Verify stock and price for all articles
-        for articulo in articulos:
-            codigo, _, precio, cantidad, subtotal, id_metodo = articulo
-            cursor.execute("SELECT existencia, precio FROM articulos WHERE codigo = %s", (codigo,))
-            result = cursor.fetchone()
-            if not result:
-                messagebox.showerror("Error", f"El artículo con código {codigo} no existe")
-                return False
-            if result[0] < cantidad:
-                messagebox.showerror("Error", f"No hay suficiente existencia para {codigo}. Disponible: {result[0]}")
-                return False
-            if abs(float(precio) - float(result[1])) > 0.01:
-                messagebox.showerror("Error", f"El precio del artículo {codigo} no coincide con la base de datos")
-                return False
-
-        # Insert into ventas
-        query_venta = "INSERT INTO ventas (fecha, usuario) VALUES (NOW(), %s)"
-        cursor.execute(query_venta, (usuario,))
+        cursor = conexion.cursor()
+        # Insertar en la tabla ventas
+        query_venta = """
+        INSERT INTO ventas (fecha, usuario, telefono)
+        VALUES (%s, %s, %s)
+        """
+        fecha = datetime.now()
+        valores_venta = (fecha, usuario, telefono)
+        cursor.execute(query_venta, valores_venta)
         id_venta = cursor.lastrowid
 
-        # Insert into detalles_ventas
+        # Insertar en la tabla detalles_ventas
         query_detalle = """
         INSERT INTO detalles_ventas (id_venta, codigo_articulo, cantidad, subtotal, id_metodo)
         VALUES (%s, %s, %s, %s, %s)
         """
-        for articulo in articulos:
-            codigo, _, precio, cantidad, subtotal, id_metodo = articulo
+        for item in articulos:
+            codigo, _, precio, cantidad, subtotal, id_metodo = item
             valores_detalle = (id_venta, codigo, cantidad, subtotal, id_metodo)
             cursor.execute(query_detalle, valores_detalle)
-            cursor.execute("UPDATE articulos SET existencia = existencia - %s WHERE codigo = %s", (cantidad, codigo))
+            
+            # Actualizar el articulo
+            query_update = "UPDATE articulos SET existencia = existencia - %s WHERE codigo = %s"
+            cursor.execute(query_update, (cantidad, codigo))
 
         conexion.commit()
-        messagebox.showinfo("Éxito", "Venta registrada correctamente")
         return True
-    except mysql.connector.Error as err:
-        messagebox.showerror("Error", f"Error al registrar venta: {err}")
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Error al registrar la venta: {e}")
+        conexion.rollback()
         return False
     finally:
         cursor.close()
@@ -998,6 +1000,43 @@ def registrar_venta(codigo_articulo):
         cursor.close()
         conexion.close()
 
+def agregar_compra(supervisor, articulos):
+    conexion = obtener_conexion()
+    if not conexion:
+        return
+    try:
+        cursor = conexion.cursor()
+        # Insertar en tabla compras
+        total = sum(float(item[4]) for item in articulos)
+        id_metodo = articulos[0][5]  # Asumimos que todos los artículos usan el mismo método de pago
+        fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute(
+            "INSERT INTO compras (supervisor, fecha, total, id_metodo) VALUES (%s, %s, %s, %s)",
+            (supervisor, fecha, total, id_metodo)
+        )
+        id_compra = cursor.lastrowid
+        # Insertar en detalle_compras y actualizar stock
+        for articulo in articulos:
+            codigo, _, costo, cantidad, subtotal, id_metodo, id_proveedor = articulo
+            cursor.execute(
+                "INSERT INTO detalle_compras (id_compra, codigo_articulo, cantidad, subtotal, id_proveedor) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                (id_compra, codigo, cantidad, subtotal, id_proveedor)
+            )
+            cursor.execute(
+                "UPDATE articulos SET existencia = existencia + %s WHERE codigo = %s",
+                (cantidad, codigo)
+            )
+        conexion.commit()
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Error al registrar compra: {e}")
+        conexion.rollback()
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+
 def ver_ventas(tabla):
     conexion = obtener_conexion()
     if not conexion:
@@ -1025,25 +1064,60 @@ def ver_ventas(tabla):
         conexion.close()
 
 def ver_historia_venta(fecha, tabla):
+    """
+    Muestra el historial de ventas para una fecha específica en la tabla proporcionada.
+    Incluye ID Venta, Fecha, Usuario, Rol, Teléfono, Artículo, Cantidad, Subtotal, Método de Pago y Total por venta.
+    Args:
+        fecha: Fecha en formato YYYY-MM-DD para filtrar las ventas.
+        tabla: Objeto Treeview donde se mostrarán los datos.
+    Returns:
+        bool: True si la operación fue exitosa, False en caso de error.
+    """
     conexion = obtener_conexion()
     if not conexion:
         return False
     try:
         cursor = conexion.cursor()
         query = """
-        SELECT v.id_venta, v.fecha, v.usuario, a.nombre, d.cantidad, d.subtotal, m.tipo
+        SELECT v.id_venta, v.fecha, v.usuario, u.rol, COALESCE(v.telefono, '') AS telefono,
+               a.nombre, d.cantidad, d.subtotal, m.tipo,
+               SUM(d2.subtotal) AS total_venta
         FROM ventas v
+        JOIN usuarios u ON v.usuario = u.usuario
         JOIN detalles_ventas d ON v.id_venta = d.id_venta
         JOIN articulos a ON d.codigo_articulo = a.codigo
         JOIN metodo_de_pago m ON d.id_metodo = m.id_metodo
+        JOIN detalles_ventas d2 ON v.id_venta = d2.id_venta
         WHERE DATE(v.fecha) = %s
+        GROUP BY v.id_venta, v.fecha, v.usuario, u.rol, v.telefono, a.nombre, d.cantidad, d.subtotal, m.tipo
+        ORDER BY v.fecha DESC
         """
         cursor.execute(query, (fecha,))
         rows = cursor.fetchall()
+        
+        # Limpia las filas existentes en la tabla
         for row in tabla.get_children():
             tabla.delete(row)
+        
+        if not rows:
+            messagebox.showinfo("Información", f"No se encontraron ventas para la fecha {fecha}")
+            return True
+        
         for row in rows:
-            tabla.insert("", "end", values=row)
+            # Formatea la fecha y los valores numéricos
+            formatted_row = (
+                row[0],  # id_venta
+                row[1].strftime('%Y-%m-%d %H:%M:%S'),  # fecha
+                row[2],  # usuario
+                row[3],  # rol (now from usuarios table)
+                row[4],  # telefono
+                row[5],  # nombre artículo
+                row[6],  # cantidad
+                f"{row[7]:.2f}",  # subtotal
+                row[8],  # método de pago
+                f"{row[9]:.2f}"  # total_venta
+            )
+            tabla.insert("", "end", values=formatted_row)
         return True
     except mysql.connector.Error as e:
         messagebox.showerror("Error", f"Error al mostrar historial de ventas: {e}")
@@ -1087,6 +1161,36 @@ def ver_corte_de_caja(fecha):
     finally:
         cursor.close()
         conexion.close()
+        
+def ver_historia_compra(fecha, tabla):
+    conexion = obtener_conexion()
+    if not conexion:
+        return False
+    try:
+        cursor = conexion.cursor()
+        query = """
+        SELECT c.id_compra, c.fecha, c.supervisor, a.nombre, d.cantidad, d.subtotal, m.tipo, p.nombre, p.id_proveedor
+        FROM compras c
+        JOIN detalle_compras d ON c.id_compra = d.id_compra
+        JOIN articulos a ON d.codigo_articulo = a.codigo
+        JOIN metodo_de_pago m ON c.id_metodo = m.id_metodo
+        JOIN proveedor p ON d.id_proveedor = p.id_proveedor
+        WHERE DATE(c.fecha) = %s
+        """
+        cursor.execute(query, (fecha,))
+        rows = cursor.fetchall()
+        for row in tabla.get_children():
+            tabla.delete(row)
+        for row in rows:
+            tabla.insert("", "end", values=row)
+        return True
+    except mysql.connector.Error as e:
+        messagebox.showerror("Error", f"Error al mostrar historial de compras: {e}")
+        return False
+    finally:
+        cursor.close()
+        conexion.close()
+
 
 def registrar_corte_de_caja(fecha, total, num_ventas, efectivo, tarjeta_credito, transferencia, usuario):
     conexion = obtener_conexion()
@@ -1136,6 +1240,24 @@ def ver_cortes_historicos(fecha=None):
     finally:
         cursor.close()
         conexion.close()
+        conexion.close()
+
+def buscar_cliente(campo, valor):
+    conexion = obtener_conexion()
+    if not conexion:
+        print("Error: No se pudo conectar a la base de datos")
+        return None
+    try:
+        cursor = conexion.cursor()
+        query = f"SELECT nombre, apellidos, telefono, direccion, rfc, correo FROM clientes WHERE {campo} = %s"
+        cursor.execute(query, (valor,))  # Use a tuple for parameterized query
+        resultado = cursor.fetchone()  # Use fetchone() to get a single tuple or None
+        return resultado
+    except mysql.connector.Error as e:
+        print(f"Error al buscar cliente: {e}")
+        return None
+    finally:
+        cursor.close()
         conexion.close()
 
         
