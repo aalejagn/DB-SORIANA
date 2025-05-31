@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox, PhotoImage
+from tkinter import Tk, Label, Frame, Entry, Button, ttk, messagebox
 from clientes import crear_seccion_clientes
 from proveedor import crear_seccion_proveedor
 from unidades import crear_seccion_unidades
@@ -100,6 +100,9 @@ def validar_usuarios(usuario, contraseña, ventana, marco_sombra):
 """
 Creación de lado lateral para los botones
 """
+"""
+Creación de lado lateral para los botones
+"""
 def barra_lateral(ventana, usuario):
     barra_lateral = Frame(ventana, bg="#1E88E5", width=250)
     barra_lateral.pack(side="left", fill="y")
@@ -122,7 +125,7 @@ def barra_lateral(ventana, usuario):
     if tipo_usuario == "Trabajador":
         opciones = ["Ventas", "Historial de Ventas"]
     elif tipo_usuario == "Supervisor":
-        opciones = ["Ventas", "Historial de Ventas", "Compras", "Historial de Compras"]
+        opciones = ["Ventas", "Historial de Ventas", "Compras", "Historial de Compras", "Corte de Caja"]
     else:  # Gerente
         opciones = ["Ventas", "Compras", "Clientes", "Proveedor", "Unidades", "Categorias", "Metodo de pago", "Articulos", "Historial de Ventas", "Historial de Compras", "Corte de Caja", "Empleado", "Configuración"]
 
@@ -195,6 +198,9 @@ def barra_lateral(ventana, usuario):
            command=lambda: manejo_clientes(ventana, tipo_usuario, barra_lateral),
            relief="flat", activebackground="#0D47A1", activeforeground="white", bd=0, padx=10, pady=5)\
         .pack(pady=40)
+    
+
+
 """
 Función para cerrar sesión y volver al login
 """

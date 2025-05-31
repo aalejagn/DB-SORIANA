@@ -420,21 +420,40 @@ def eliminar_proveedor(id_proveedor):
     conexion = obtener_conexion()
     if not conexion:
         return False
+    
     cursor = conexion.cursor()
-    query = "DELETE FROM proveedor WHERE id_proveedor = %s"
-    valores = (id_proveedor,)
+    
     try:
-        cursor.execute(query, valores)
+        # Verificar si el proveedor está en uso por algún artículo
+        query_check_articulos = "SELECT COUNT(*) FROM articulos WHERE id_proveedor = %s"
+        cursor.execute(query_check_articulos, (id_proveedor,))
+        if cursor.fetchone()[0] > 0:
+            messagebox.showerror("Error", "No se puede eliminar el proveedor porque está asociado a al menos un artículo.")
+            return False
+
+        # Verificar si el proveedor está en uso por algún detalle de compra
+        query_check_compras = "SELECT COUNT(*) FROM detalle_compras WHERE id_proveedor = %s"
+        cursor.execute(query_check_compras, (id_proveedor,))
+        if cursor.fetchone()[0] > 0:
+            messagebox.showerror("Error", "No se puede eliminar el proveedor porque está asociado a al menos una compra.")
+            return False
+
+        # Eliminar el proveedor
+        query = "DELETE FROM proveedor WHERE id_proveedor = %s"
+        cursor.execute(query, (id_proveedor,))
         conexion.commit()
         if cursor.rowcount > 0:
-            messagebox.showinfo("Exito", "Proveedor eliminado correctamente")
+            messagebox.showinfo("Éxito", "Proveedor eliminado correctamente")
         else:
-            messagebox.showwarning("Error", "No se encontro el proveedor")
+            messagebox.showwarning("Error", "No se encontró el proveedor")
     except mysql.connector.Error as e:
-        messagebox.showerror("Error", f"Hubo un problema al eliminar el proveedor {e}")
+        conexion.rollback()
+        messagebox.showerror("Error", f"Hubo un problema al eliminar el proveedor: {e}")
     finally:
         cursor.close()
         conexion.close()
+
+    return cursor.rowcount > 0
 
 def actualizar_proveedor(id_proveedor_original, id_proveedor, nombre, telefono, empresa, descripcion):
     conexion = obtener_conexion()
@@ -650,21 +669,33 @@ def eliminar_unidad(id_unidad):
     conexion = obtener_conexion()
     if not conexion:
         return False
+    
     cursor = conexion.cursor()
-    query = "DELETE FROM unidades WHERE id_unidad = %s"
-    valores = (id_unidad,)
+    
     try:
-        cursor.execute(query, valores)
+        # Verificar si la unidad está en uso por algún artículo
+        query_check = "SELECT COUNT(*) FROM articulos WHERE id_unidad = %s"
+        cursor.execute(query_check, (id_unidad,))
+        if cursor.fetchone()[0] > 0:
+            messagebox.showerror("Error", "No se puede eliminar la unidad porque está en uso por al menos un artículo.")
+            return False
+
+        # Eliminar la unidad
+        query = "DELETE FROM unidades WHERE id_unidad = %s"
+        cursor.execute(query, (id_unidad,))
         conexion.commit()
         if cursor.rowcount > 0:
-            messagebox.showinfo("Exito", "Unidad eliminada correctamente")
+            messagebox.showinfo("Éxito", "Unidad eliminada correctamente")
         else:
-            messagebox.showwarning("Error", "No se encontro la unidad")
+            messagebox.showwarning("Error", "No se encontró la unidad")
     except mysql.connector.Error as e:
-        messagebox.showerror("Error", f"Hubo un problema al eliminar la unidad {e}")
+        conexion.rollback()
+        messagebox.showerror("Error", f"Hubo un problema al eliminar la unidad: {e}")
     finally:
         cursor.close()
         conexion.close()
+
+    return cursor.rowcount > 0
 
 def actualizar_unidad(id_unidad_original, id_unidad, nombre, descripcion):
     conexion = obtener_conexion()
@@ -787,9 +818,12 @@ def eliminar_articulos(codigo):
             messagebox.showwarning("No encontrado", f"El artículo con código {codigo} no existe en la base de datos.")
             return
 
-        # Eliminar registros relacionados en la tabla ventas
-        query_ventas = "DELETE FROM ventas WHERE codigo_articulo = %s"
-        cursor.execute(query_ventas, (codigo,))
+        # Iniciar transacción
+        query_delete_detalles_ventas = "DELETE FROM detalles_ventas WHERE codigo_articulo = %s"
+        cursor.execute(query_delete_detalles_ventas, (codigo,))
+
+        query_delete_detalles_compras = "DELETE FROM detalle_compras WHERE codigo_articulo = %s"
+        cursor.execute(query_delete_detalles_compras, (codigo,))
 
         # Establecer a NULL las llaves foráneas antes de eliminar (si el esquema lo permite)
         query_update = """
@@ -805,10 +839,11 @@ def eliminar_articulos(codigo):
         
         conexion.commit()
         if cursor.rowcount > 0:
-            messagebox.showinfo("Éxito", f"Artículo con código {codigo} y ventas asociadas eliminados correctamente")
+            messagebox.showinfo("Éxito", f"Artículo con código {codigo} y registros asociados eliminados correctamente")
         else:
             messagebox.showwarning("No encontrado", f"No se pudo eliminar el artículo con código {codigo}.")
     except mysql.connector.Error as err:
+        conexion.rollback()
         messagebox.showerror("Error", f"Error al eliminar el artículo: {err}")
     finally:
         cursor.close()
@@ -1198,10 +1233,10 @@ def registrar_corte_de_caja(fecha, total, num_ventas, efectivo, tarjeta_credito,
         return False
     cursor = conexion.cursor()
     query = """
-    INSERT INTO cortes_de_caja (fecha, total, num_ventas, efectivo, tarjeta_credito, transferencia, usuario)
-    VALUES (%s, %s, %s, %s, %s, %s, %s)
+    INSERT INTO cortes_de_caja (fecha, total, num_ventas, efectivo, tarjeta_credito, tarjeta_debito, transferencia, usuario)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """
-    valores = (fecha, total, num_ventas, efectivo, tarjeta_credito, transferencia, usuario)
+    valores = (fecha, total, num_ventas, efectivo, tarjeta_credito, 0.00, transferencia, usuario)  # Add tarjeta_debito as 0.00
     try:
         cursor.execute(query, valores)
         conexion.commit()
@@ -1250,8 +1285,8 @@ def buscar_cliente(campo, valor):
     try:
         cursor = conexion.cursor()
         query = f"SELECT nombre, apellidos, telefono, direccion, rfc, correo FROM clientes WHERE {campo} = %s"
-        cursor.execute(query, (valor,))  # Use a tuple for parameterized query
-        resultado = cursor.fetchone()  # Use fetchone() to get a single tuple or None
+        cursor.execute(query, (valor,))  
+        resultado = cursor.fetchone()  
         return resultado
     except mysql.connector.Error as e:
         print(f"Error al buscar cliente: {e}")

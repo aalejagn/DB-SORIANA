@@ -171,8 +171,10 @@ def crear_seccion_ventas(ventana, barra_lateral, usuario):
     Label(frame_pago, text="Teléfono:", bg="#E6F0FA", font=("Arial", 12)).pack(side="left", padx=(10, 2))
     entry_telefono = Entry(frame_pago, font=("Arial", 12), width=15)
     entry_telefono.pack(side="left", padx=(0, 10))
-    cliente_info_label = Label(frame_pago, text="", bg="#E6F0FA", font=("Arial", 12))
-    cliente_info_label.pack(side="left", padx=(10, 2))
+
+    # Move cliente_info_label to frame_derecho before the buttons
+    cliente_info_label = Label(frame_derecho, text="", bg="#E6F0FA", font=("Arial", 12), wraplength=140, justify="center")
+    cliente_info_label.pack(pady=(10, 5))
 
     # Define buscar_cliente_por_telefono before using it
     def buscar_cliente_por_telefono(event=None):
