@@ -1,36 +1,46 @@
 # DBSoriana 🛒
 
-**DBSoriana** es una aplicación de escritorio chida, desarrollada en Python con Tkinter, que te permite gestionar una base de datos MySQL llamada `db_soriana`. Es un sistema completo con operaciones CRUD (Crear, Leer, Actualizar, Eliminar) para manejar empleados, categorías, proveedores, métodos de pago, unidades, clientes, usuarios, ventas e historial de compras. Además, tiene control de acceso por roles (Gerente y Trabajador) para que todo sea seguro y cada quien tenga lo que necesita.
+**DBSoriana** es una aplicación de escritorio, desarrollada en Python con Tkinter, que te permite gestionar una base de datos MySQL llamada `db23270631`. Es un sistema completo con operaciones CRUD (Crear, Leer, Actualizar, Eliminar) y el funcionamiento de un punto de venta para manejar empleados, categorías, proveedores, métodos de pago, unidades, clientes, usuarios, ventas e historial de compras. Además, tiene control de acceso por roles (Gerente y Trabajador) para que todo sea seguro y cada quien tenga lo que necesita.
 
 ## ✨ Características
 
 - **Gestión de Usuarios**: Agrega, actualiza o elimina usuarios (menos el usuario "gerente") con roles bien definidos.
-- **Sesiones Rifadas**: Inicia y cierra sesión con una lista de usuarios que se actualiza al momento.
+- **Sesiones**: Inicia y cierra sesión con una lista de usuarios que se actualiza al momento.
 - **Manejo de Entidades**: Controla clientes, empleados, categorías, proveedores, métodos de pago, unidades y ventas con operaciones CRUD.
-- **Ventas a Todo Dar**: Registra ventas, genera tickets y vincula clientes con validación de inventario en tiempo real.
+- **Ventas a Todo**: Registra ventas, genera tickets y vincula clientes con validación de inventario en tiempo real.
 - **Historial de Compras**: Revisa compras pasadas filtradas por fecha, con totales calculados al vuelo.
-- **Roles Bien Puestos**: Los Gerentes tienen acceso total (empleados, usuarios, etc.); los Trabajadores solo a lo operativo.
-- **Interfaz Chingona**: Hecha con Tkinter para que sea fácil de usar y se vea bonita.
-- **Base de Datos a Prueba de Balas**: Se conecta sin broncas a MySQL para guardar todo seguro.
+- **Roles**: Los Gerentes tienen acceso total (empleados, usuarios, etc.); los Trabajadores solo a lo operativo.
+- **Interfaz**: Hecha con Tkinter para que sea fácil de usar y se vea presentable.
+- **Base de Datos**: Se conecta a MySQL para guardar todo seguro.
 
 ## 🛠 Requisitos
 
 - **Python**: 3.8 o superior (¡que no te agarre en curva con versiones viejas!).
 - **MySQL Server**: Que esté corriendo (usa MySQL Community Server, por ejemplo).
 - **pip**: El manejador de paquetes de Python.
-- **Sistema Operativo**: Windows, macOS o Linux, tú decides.
+- **Sistema Operativo**: Windows, macOS o Linux.
 
 ## 🚀 Configuración e Instalación
 
 Sigue estos pasos para echar a andar **DBSoriana** en un entorno virtual. ¡Ponte trucha y no te saltes nada!
 
-### 1. Clona o Descarga el Proyecto
-Clona el repositorio o descarga los archivos a tu compu.
+### Clona o Descarga el Proyecto
+Clona el repositorio o descarga el archivo .zip y lo descomprime en tu computadora.
 
 ```bash
-git clone <url-del-repositorio>
-cd DBSoriana
+git clone <https://github.com/aalejagn/DB-SORIANA>
+cd db23270631
 ```
+
+### 1. Configura la Base de Datos MySQL
+
+1.1. **Crea la Base de Datos**:
+   Usa el script `db23270631.sql` para crear la base de datos `db23270631` y sus tablas.
+   ```bash
+   mysql -u root -p < db23270631.sql
+   ```
+   - Mete la contraseña de `root` cuando te la pida.
+nota: **Asi ya manejaras los datos de la base de datos o lo puedes meter a tu software de mysql**
 
 ### 2. Crea un Entorno Virtual
 Crea un entorno virtual para mantener las dependencias separadas.
@@ -46,16 +56,14 @@ Activa el entorno virtual para usar su Python aislado.
   ```bash
   .\env23270631\Scripts\activate
   ```
+  -**agregarlo a archivo gitignore**-
+   env23270631
 
-- **macOS/Linux**:
-  ```bash
-  source env23270631/bin/activate
-  ```
 
 Si todo sale bien, verás `(env23270631)` en tu terminal.
 
 ### 4. Checa los Paquetes Instalados
-Revisa qué paquetes hay en el entorno virtual (deberían ser poquitos, como `pip` y `setuptools`).
+Revisa qué paquetes hay en el entorno virtual (deberían ser poquitos)
 
 ```bash
 pip list
@@ -66,50 +74,31 @@ Instala los paquetes que necesita el proyecto.
 
 ```bash
 pip install mysql-connector-python tk
+pip install Pillow
+
 ```
+tambien utilizo lo que es re y datetime pero ya viene incluido con la librearias estandars de python
 
 - **`mysql-connector-python`**: Para conectar con la base de datos MySQL.
 - **`tk`**: Asegura que Tkinter esté listo (suele venir con Python, pero por si las dudas).
 
-### 6. Configura la Base de Datos MySQL
-1. **Arranca el Servidor MySQL**:
-   Asegúrate de que MySQL esté corriendo.
-   ```bash
-   mysql.server start  # macOS
-   sudo systemctl start mysql  # Linux
-   net start mysql  # Windows
-   ```
-
-2. **Crea la Base de Datos**:
-   Usa el script `23270631.sql` para crear la base de datos `db_soriana` y sus tablas.
-   ```bash
-   mysql -u root -p < 23270631.sql
-   ```
-   - Mete la contraseña de `root` cuando te la pida.
-   - El script crea la base, tablas y mete datos iniciales (como el usuario "gerente").
-
-3. **Verifica la Base de Datos**:
-   Conéctate a MySQL y checa que todo esté en orden.
-   ```bash
-   mysql -u root -p
-   ```
-   ```sql
-   SHOW DATABASES;
-   USE db_soriana;
-   SHOW TABLES;
-   ```
 
 ### 7. Configura las Credenciales de la Base de Datos
 Asegúrate de que el archivo `db_soriana.py` tenga las credenciales correctas.
 
-1. Abre `db_soriana.py` en Visual Studio Code y revisa el diccionario `MYSQL_CONFIG`:
+1. Abre `db_soriana.py`:
    ```python
-   MYSQL_CONFIG = {
-       'host': 'localhost',
-       'user': 'root',
-       'password': '23270631@',  # Cambia esto por tu contraseña de MySQL
-       'database': 'db_soriana'
-   }
+  def obtener_conexion():
+      try:
+          return mysql.connector.connect(
+              host="localhost",  # Host local
+              user="root",
+              password="23270631@", #Cambia la contraseña 
+              database="db23270631"
+          )
+      except mysql.connector.Error as e:
+          messagebox.showerror("Error", f"No se pudo conectar a la base de datos: {e}")
+          return None
    ```
 
 2. Guarda el archivo. Si usas otro usuario, contraseña o host, cámbialos aquí.
@@ -126,14 +115,14 @@ O:
 py catalogos.py
 ```
 
-Se abrirá una ventana de Tkinter con la pantalla de login. Usa las credenciales predeterminadas (usuario: `gerente`, contraseña: `admin`) para entrar.
+Se abrirá una ventana de Tkinter con la pantalla de login. Usa las credenciales predeterminadas (usuario: `gerente`, contraseña: `2327`) para entrar.
 
 ## 📂 Estructura del Proyecto
 
 Aquí te desgloso qué hace cada archivo del proyecto:
 
 - **`db_soriana.py`**  
-  - La neta, este es el cerebro de la base de datos. Tiene la conexión a MySQL y todas las funciones para hacer operaciones CRUD (como `agregar_venta`, `buscar_cliente`, `ver_historia_compra`).
+  - Este es el cerebro de la base de datos. Tiene la conexión a MySQL y todas las funciones para hacer operaciones CRUD (como `agregar_venta`, `buscar_cliente`, `ver_historia_compra`).
   - Define `MYSQL_CONFIG` para conectar con la base.
   - Se usa en todos los módulos para interactuar con la base de datos.
 
@@ -206,32 +195,32 @@ Aquí te desgloso qué hace cada archivo del proyecto:
 - La barra lateral se ajusta según tu rol, para que no te pierdas.
 
 ### Ventas (`ventas.py`)
-- **Cómo Jala**:
+- **Cómo Funciona**:
   1. Mete el código del producto y la cantidad para añadirlo.
   2. Elige el método de pago (Efectivo, Tarjeta). Si es efectivo, pon cuánto te dieron para calcular el cambio.
   3. Si quieres, mete el teléfono del cliente para vincular la venta (puedes buscarlo o agregar uno nuevo).
   4. Confirma la venta para guardarla y limpia la pantalla.
   5. Genera un ticket con todos los detalles.
-- **Lo Chido**:
+- **Lo Mejor**:
   - Checa el inventario en tiempo real para no vender de más.
   - Los tickets se ven en una ventana emergente con todo bien formateado.
   - Si ya hubo corte de caja, las ventas se bloquean hasta el siguiente día.
 
 ### Historial de Compras (`historial_compras.py`)
-- **Cómo Jala**:
+- **Cómo Funciona**:
   1. Pon una fecha (YYYY-MM-DD) para ver las compras de ese día.
   2. Mira una tabla con ID, fecha, supervisor, artículos, etc.
   3. Checa el total de las compras mostradas.
-- **Lo Chido**:
+- **Lo Mejor**:
   - Valida que la fecha esté bien escrita.
   - Suma los totales al momento.
 
 ### Gestión de Entidades (`unidades.py`, `proveedor.py`, `metodo_de_pago.py`, etc.)
-- **Cómo Jala**:
+- **Cómo funciona**:
   1. Busca registros por ID, nombre, etc., o mira todos.
   2. Agrega, actualiza o elimina usando los campos y botones.
   3. Limpia todo para empezar de nuevo.
-- **Lo Chido**:
+- **Lo Mejor**:
   - Tablas con barras de desplazamiento para manejar muchos datos.
   - Comboboxes con opciones predefinidas.
   - Valida que no dejes campos vacíos.
@@ -243,39 +232,7 @@ Aquí te desgloso qué hace cada archivo del proyecto:
 
 ## 🛑 Si Algo Falla
 
-- **No Conecta con MySQL**:
-  - Checa que el servidor esté corriendo y que las credenciales en `db_soriana.py` estén correctas.
-  - Asegúrate de que `db_soriana` exista (`SHOW DATABASES;` en MySQL).
-
-- **Falta un Módulo**:
-  - Verifica que el entorno virtual esté activado y las dependencias instaladas (`pip list`).
-  - Reinstala si hace falta: `pip install mysql-connector-python tk`.
-
-- **No Sale la Ventana de Tkinter**:
-  - Confirma que Tkinter está en tu Python (`python -m tkinter`).
-  - Revisa que no haya conflictos con otras bibliotecas.
-
 - **Error de Corte de Caja**:
   - Si no puedes hacer ventas, checa la tabla `cortes_de_caja` para la fecha actual.
   - Solo se permite un corte por día.
 
-## 🤝 ¿Quieres Aportar?
-
-Si quieres meterle mano al proyecto:
-1. Haz un fork del repositorio.
-2. Crea una rama nueva (`git checkout -b mi-funcionalidad`).
-3. Haz tus cambios y commitea (`git commit -m "Añadí algo chido"`).
-4. Sube tu rama (`git push origin mi-funcionalidad`).
-5. Abre un pull request.
-
-## 📜 Licencia
-
-Este proyecto está bajo la **Licencia MIT**. Échale un ojo al archivo `LICENSE` para los detalles.
-
-## 📩 Contacto
-
-Si tienes dudas o quieres platicar, escribe al mantenedor en [tu-correo@ejemplo.com].
-
----
-
-¡Échale un ojo en Visual Studio Code y déjalo correr! Si necesitas que le meta más salsa o quieres que revise algo más, nomás dime, compa. 😎
